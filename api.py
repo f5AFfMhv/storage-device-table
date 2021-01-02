@@ -5,6 +5,7 @@
 # RESTful API with flask - https://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
 # Flask tutorial - https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
 # Insert data to sqlite db - https://www.sqlitetutorial.net/sqlite-python/insert/
+# HTML filter table example - https://morioh.com/p/51dbc30377fc
 
 from flask import Flask, jsonify, request, make_response
 from json2html import *
@@ -19,30 +20,41 @@ DB_FILE = 'servers.db'
 app = Flask(__name__)
 app.config["DEBUG"] = True # Enable stdout logging
 
-# Method to convert data from SQLite DB to dictionary (from "API with flask" tutorial)
+# Function to convert data from SQLite DB to dictionary (from "API with flask" tutorial)
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
     return d
 
-# Method to read and parse data from SQLite DB
-def db_read(db, sql):
+# Function to read and parse data from SQLite DB
+def db_read(db, sql, opts=''):
     conn = sqlite3.connect(db)
     conn.row_factory = dict_factory
     cur = conn.cursor()
-    return cur.execute(sql).fetchall()
+    return cur.execute(sql, opts).fetchall()
 
-# Error handling methods
+# Function to modify SQLite DB data
+def db_mod(db, sql, opts=''):
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute(sql, opts)
+    conn.commit()
+
+# Error handling functions
 def page_not_found(e):
     return make_response(jsonify({'error':'Not found', 'status':e}), e)
 
-def bad_request(e):
-    return make_response(jsonify({'error':'Bad request', 'status':e}), e)
+def bad_request(e, msg=''):
+    return make_response(jsonify({'error':'Bad request', 'status':e, 'message':msg}), e)
 
 @app.errorhandler(404)
-def not_found(e):
+def default_page_not_found(e):
     return make_response(jsonify({'error':'Not found', 'status':404}), 404)
+
+@app.errorhandler(400)
+def default_bad_request(e):
+    return make_response(jsonify({'error':'Bad request', 'status':400}), 400)
 
 # Server root page shows table with all records from DB
 @app.route('/', methods=['GET'])
@@ -84,89 +96,93 @@ def get_record():
     if not (id or state or name):
         return page_not_found(404)
 
-    sql = sql[:-4] + ';'
+    # Remove trailing 'AND' from sql query
+    sql = sql[:-4]
 
-    conn = sqlite3.connect('servers.db')
-    conn.row_factory = dict_factory
-    cur = conn.cursor()
-
-    results = cur.execute(sql, to_filter).fetchall()
+    # Get results, if they exists, from DB
+    results = db_read(DB_FILE, sql, to_filter)
     if results == []:
         return page_not_found(404)
     else:
         return jsonify(results)
 
+# API CREATE NEW RESOURCE
+# Create new server record. Record ID is incremented automaticaly by DB, so no need to pass record id
 @app.route(BASE, methods=['POST'])
 def create_record():
 
+    # If POST request is valid, form list of arguments from request and add new record to DB file.
+    # If value is missing NULL will be assigned
     if not request.json or not 'name' in request.json:
         return bad_request(400)
-    server = {
-        'name' : request.json.get('name'),
-        'mount' : request.json.get('mount'),
-        'state' : request.json.get('state'),
-        'size_gb' : request.json.get('size_gb'),
-        'free_gb' : request.json.get('free_gb'),
-        'used_perc' : request.json.get('used_perc')
-    }
 
     server_list = (request.json.get('name'), request.json.get('mount'), request.json.get('state'), 
                     request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'))
-    
+    # SQL query
     sql = ''' INSERT INTO servers(name,mount,state,size_gb,free_gb,used_perc)
               VALUES(?,?,?,?,?,?) '''
 
-    conn = sqlite3.connect('servers.db')
-    cur = conn.cursor()
-    cur.execute(sql, server_list)
-    conn.commit()
-    return jsonify({'server': server}), 201
+    # Execute SQL query
+    db_mod(DB_FILE, sql, server_list)
 
-@app.route(BASE, methods=['DELETE'])
-def delete_record():
-    query_parameters = request.args
-    id = query_parameters.get('id')
-    r = requests.get(BASE_URL + '?id=' + id)
-    if (r.status_code == 404):
-        return bad_request(400)
-    
-    sql = ''' DELETE FROM servers WHERE id=? '''
-    conn = sqlite3.connect('servers.db')
-    cur = conn.cursor()
-    cur.execute(sql, (id,))
-    conn.commit()
-    return jsonify({'result': True}), 200
+    # Get latest record from DB
+    sql = ''' SELECT * FROM servers WHERE id=(SELECT MAX(id) FROM servers); '''
+    latest_server = db_read(DB_FILE, sql)
+    return jsonify({'server': latest_server}), 201
 
+# API UPDATE EXISTING RESOURCE
+# Update existing record by id with new values (can't change server name or mount point)
 @app.route(BASE, methods=['PUT'])
 def update_record():
+    # Check request validity
     if not request.json or not 'id' in request.json:
-        return bad_request(400)
+        return bad_request(400, 'id value incorect or missing')
+    # Check if record with provided id exists in DB
     id = request.json.get('id')
     r = requests.get(BASE_URL + '?id=' + str(id))
     if (r.status_code == 404):
-        return bad_request(400)
-    if 'state' in request.json and type(request.json['state']) != str:
-        return bad_request(400)
-    if 'size_gb' in request.json and type(request.json['size_gb']) != int:
-        return bad_request(400)
-    if 'free_gb' in request.json and type(request.json['free_gb']) != int:
-        return bad_request(400)
-    if 'used_perc' in request.json and type(request.json['used_perc']) != int:
-        return bad_request(400)
+        return page_not_found(404)
+    # Check if request passed valid new values for record
+    if type(request.json.get('state')) != str or request.json.get('state') == None:
+        return bad_request(400, 'state value incorect or missing')
+    if type(request.json.get('size_gb')) != int or request.json.get('size_gb') == None:
+        return bad_request(400, 'size_gb value incorect or missing')
+    if type(request.json.get('free_gb')) != int or request.json.get('free_gb') == None:
+        return bad_request(400, 'free_gb value incorect or missing')
+    if type(request.json.get('used_perc')) != int or request.json.get('used_perc') == None:
+        return bad_request(400, 'used_perc value incorect or missing')
 
+    # Form list of new values from request (no NULL values should be added, because of previous check)
     server_list = (request.json.get('state'), request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), request.json.get('id'))
 
+    # Build SQL query
     sql = ''' UPDATE servers
               SET state = ? ,
                   size_gb = ? ,
                   free_gb = ? ,
                   used_perc = ?
               WHERE id = ?'''
-    conn = sqlite3.connect('servers.db')
-    cur = conn.cursor()
-    cur.execute(sql, server_list)
-    conn.commit()
+
+    # Execute SQL query
+    db_mod(DB_FILE, sql, server_list)
+    # Get modified record from DB
     r = requests.get(BASE_URL + '?id=' + str(id))
     return jsonify({'server': r.json()})
+
+# API DELETE RECORD
+# Delete existing record from DB file
+@app.route(BASE, methods=['DELETE'])
+def delete_record():
+    # Check if record exists
+    id = request.args.get('id')
+    r = requests.get(BASE_URL + '?id=' + id)
+    if (r.status_code == 404):
+        return page_not_found(404)
     
+    # Form SQL query
+    sql = ''' DELETE FROM servers WHERE id=? '''
+    # Execute SQL query
+    db_mod(DB_FILE, sql, (id,))
+    return jsonify({'result': True}), 200
+
 app.run(host='0.0.0.0')
