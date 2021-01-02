@@ -8,7 +8,6 @@
 # HTML filter table example - https://morioh.com/p/51dbc30377fc
 
 from flask import Flask, jsonify, request, make_response
-from json2html import *
 import sqlite3
 import requests
 
@@ -16,6 +15,7 @@ import requests
 BASE = '/api/v1/resources/servers' # API uri
 BASE_URL = 'http://localhost:5000' + BASE
 DB_FILE = 'servers.db'
+HTML_TEMPLATE = 'html/table.html'
 
 app = Flask(__name__)
 app.config["DEBUG"] = True # Enable stdout logging
@@ -61,8 +61,55 @@ def default_bad_request(e):
 def home():
     # Get data from API
     r = requests.get(BASE_URL + '/all')
-    # Result --> JSON --> HTML
-    return json2html.convert(json = r.json())
+    all_servers = r.json()
+    # Open html template
+    f = open(HTML_TEMPLATE,'r')
+    server_table = f.read()
+    server_table_normal = ''
+    server_table_warning = ''
+    server_table_alert = ''
+    server_table_other = ''
+    # Add data from API call. Also make some filtering that records with alert state would be on top
+    for i in all_servers:
+        if i['state'] == "normal":
+            server_table_normal += '<tr style="background:lightgreen;"><td>' + str(i['id']) + \
+                        '</td><td>' + str(i['name']) + \
+                        '</td><td>' + str(i['mount']) + \
+                        '</td><td>' + str(i['state']) + \
+                        '</td><td>' + str(i['size_gb']) + \
+                        '</td><td>' + str(i['free_gb']) + \
+                        '</td><td>' + str(i['used_perc']) + \
+                        '</td></tr>'
+        elif i['state'] == "warning":
+            server_table_warning += '<tr style="background:yellow;"><td>' + str(i['id']) + \
+                        '</td><td>' + str(i['name']) + \
+                        '</td><td>' + str(i['mount']) + \
+                        '</td><td>' + str(i['state']) + \
+                        '</td><td>' + str(i['size_gb']) + \
+                        '</td><td>' + str(i['free_gb']) + \
+                        '</td><td>' + str(i['used_perc']) + \
+                        '</td></tr>'
+        elif i['state'] == "alert":
+            server_table_alert += '<tr style="background:red;"><td>' + str(i['id']) + \
+                        '</td><td>' + str(i['name']) + \
+                        '</td><td>' + str(i['mount']) + \
+                        '</td><td>' + str(i['state']) + \
+                        '</td><td>' + str(i['size_gb']) + \
+                        '</td><td>' + str(i['free_gb']) + \
+                        '</td><td>' + str(i['used_perc']) + \
+                        '</td></tr>'
+        else:
+            server_table_other += '<tr><td>' + str(i['id']) + \
+                        '</td><td>' + str(i['name']) + \
+                        '</td><td>' + str(i['mount']) + \
+                        '</td><td>' + str(i['state']) + \
+                        '</td><td>' + str(i['size_gb']) + \
+                        '</td><td>' + str(i['free_gb']) + \
+                        '</td><td>' + str(i['used_perc']) + \
+                        '</td></tr>'
+        
+    server_table += server_table_alert + server_table_warning + server_table_normal + server_table_other +'</tbody></table><p>by Martynas J.</p></body></html>' 
+    return server_table
 
 # API OBTAIN INFORMATION
 # Get all records from DB in JSON

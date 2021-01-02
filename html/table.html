@@ -6,29 +6,25 @@
   <title>Servers Disk Space Table</title>
   <style>
     input {
-      width: 50%;
+      width: 100%;
       border-radius: 5px;
       text-align: center;
-      border: 3px solid black;
-      height: 40px;
+      border: none;
+      height: 20px;
+    }
+
+    body {
+      background-color: gray;
     }
 
     table {
-      margin-top: 30px;
-      border: 1px solid black;
+      border: 3px solid black;
       border-collapse: collapse;
-    }
-
-    tr:nth-of-type(even) {
-      background: lightgray;
-    }
-
-    thead {
-      background: orange;  
+      background-color: white;
     }
 
     tr, td, th {
-      padding: 15px;
+      padding: 10px;
       border: 1px solid black;
       border-collapse: collapse;
     }
@@ -79,12 +75,10 @@
 </script>
 
 <body>
-  <h1>Server Disk Space Table</h1>
-  <input type="search" class="light-table-filter" data-table="table-info" placeholder="SEARCH">
- 
-    <table class="table-info table">
-        <thead>
-        <tr>
+  <h3>Server Disk Space Table</h3>
+  <table class="table-info table">
+    <thead>
+      <tr>
         <th>ID</th>
         <th>Name</th>
         <th>Mount Point</th>
@@ -92,5 +86,9 @@
         <th>Size GB</th>
         <th>Free GB</th>
         <th>Usage %</th>
-        </tr>
-        </thead>
+      </tr>
+      <tr>
+        <td colspan=100%><input type="search" class="light-table-filter" data-table="table-info" placeholder="SEARCH"></td>
+      </tr>
+    </thead>
+    <tbody>
