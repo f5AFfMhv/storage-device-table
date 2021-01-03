@@ -122,10 +122,11 @@ def get_all_records():
 # Get specific records from DB
 @app.route(BASE, methods=['GET'])
 def get_record():
-    # Filter API requests by record ID, name or state
+    # Filter API requests by record ID, hostname, state or mount point
     id = request.args.get('id')
     state = request.args.get('state')
     name = request.args.get('name')
+    mount = request.args.get('mount')
 
     # Build SQL query from given requests
     sql = "SELECT * FROM servers WHERE"
@@ -140,7 +141,10 @@ def get_record():
     if name:
         sql += ' name=? AND'
         to_filter.append(name)
-    if not (id or state or name):
+    if mount:
+        sql += ' mount=? AND'
+        to_filter.append(mount)
+    if not (id or state or name or mount):
         return page_not_found(404)
 
     # Remove trailing 'AND' from sql query
@@ -160,8 +164,8 @@ def create_record():
 
     # If POST request is valid, form list of arguments from request and add new record to DB file.
     # If value is missing NULL will be assigned
-    if not request.json or not 'name' in request.json:
-        return bad_request(400)
+    # if not request.json or not 'name' in request.json:
+    #     return bad_request(400)
 
     server_list = (request.json.get('name'), request.json.get('mount'), request.json.get('state'), 
                     request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'))
