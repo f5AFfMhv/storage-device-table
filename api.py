@@ -8,6 +8,7 @@
 # HTML filter table example - https://morioh.com/p/51dbc30377fc
 
 from flask import Flask, jsonify, request, make_response
+from datetime import datetime
 import sqlite3
 import requests
 
@@ -80,6 +81,7 @@ def home():
                         '</td><td>' + str(i['size_gb']) + \
                         '</td><td>' + str(i['free_gb']) + \
                         '</td><td>' + str(i['used_perc']) + \
+                        '</td><td>' + str(i['updated']) + \
                         '</td></tr>'
         elif i['state'] == "warning":
             server_table_warning += '<tr style="background:yellow;"><td>' + str(i['id']) + \
@@ -90,6 +92,7 @@ def home():
                         '</td><td>' + str(i['size_gb']) + \
                         '</td><td>' + str(i['free_gb']) + \
                         '</td><td>' + str(i['used_perc']) + \
+                        '</td><td>' + str(i['updated']) + \
                         '</td></tr>'
         elif i['state'] == "alert":
             server_table_alert += '<tr style="background:red;"><td>' + str(i['id']) + \
@@ -100,6 +103,7 @@ def home():
                         '</td><td>' + str(i['size_gb']) + \
                         '</td><td>' + str(i['free_gb']) + \
                         '</td><td>' + str(i['used_perc']) + \
+                        '</td><td>' + str(i['updated']) + \
                         '</td></tr>'
         else:
             server_table_other += '<tr><td>' + str(i['id']) + \
@@ -110,6 +114,7 @@ def home():
                         '</td><td>' + str(i['size_gb']) + \
                         '</td><td>' + str(i['free_gb']) + \
                         '</td><td>' + str(i['used_perc']) + \
+                        '</td><td>' + str(i['updated']) + \
                         '</td></tr>'
         
     server_table += server_table_alert + server_table_warning + server_table_normal + server_table_other +'</tbody></table><p>by Martynas J.</p></body></html>' 
@@ -172,10 +177,11 @@ def create_record():
         return bad_request(400)
 
     server_list = (request.json.get('name'), request.json.get('mount'), request.json.get('state'), 
-                    request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), request.remote_addr)
+                    request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), 
+                    request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     # SQL query
-    sql = ''' INSERT INTO servers(name,mount,state,size_gb,free_gb,used_perc,ip)
-              VALUES(?,?,?,?,?,?,?) '''
+    sql = ''' INSERT INTO servers(name,mount,state,size_gb,free_gb,used_perc,ip,updated)
+              VALUES(?,?,?,?,?,?,?,?) '''
 
     # Execute SQL query
     db_mod(DB_FILE, sql, server_list)
@@ -208,15 +214,17 @@ def update_record():
         return bad_request(400, 'used_perc value incorect or missing')
 
     # Form list of new values from request (no NULL values should be added, because of previous check)
-    server_list = (request.json.get('state'), request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), request.remote_addr, request.json.get('id'))
-    
+    server_list = (request.json.get('state'), request.json.get('size_gb'), request.json.get('free_gb'),
+        request.json.get('used_perc'), request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), request.json.get('id'))
+   
     # Build SQL query
     sql = ''' UPDATE servers
               SET state = ? ,
                   size_gb = ? ,
                   free_gb = ? ,
                   used_perc = ?,
-                  ip = ?
+                  ip = ?,
+                  updated = ?
               WHERE id = ?'''
 
     # Execute SQL query

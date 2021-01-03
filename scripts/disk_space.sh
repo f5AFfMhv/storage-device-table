@@ -5,7 +5,7 @@
 
 # Main variables
 # "Server Disk Space" server IP or resolvable fqdn
-SERVER="localhost"
+SERVER="192.168.0.2"
 # List of mounted storage devices to be monitored
 MOUNT_LIST=("/mint--vg-root" "/mnt/backup" "/mnt/DATA")
 # Treshold values of free space in GB to determine device state
