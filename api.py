@@ -74,6 +74,7 @@ def home():
         if i['state'] == "normal":
             server_table_normal += '<tr style="background:lightgreen;"><td>' + str(i['id']) + \
                         '</td><td>' + str(i['name']) + \
+                        '</td><td>' + str(i['ip']) + \
                         '</td><td>' + str(i['mount']) + \
                         '</td><td>' + str(i['state']) + \
                         '</td><td>' + str(i['size_gb']) + \
@@ -83,6 +84,7 @@ def home():
         elif i['state'] == "warning":
             server_table_warning += '<tr style="background:yellow;"><td>' + str(i['id']) + \
                         '</td><td>' + str(i['name']) + \
+                        '</td><td>' + str(i['ip']) + \
                         '</td><td>' + str(i['mount']) + \
                         '</td><td>' + str(i['state']) + \
                         '</td><td>' + str(i['size_gb']) + \
@@ -92,6 +94,7 @@ def home():
         elif i['state'] == "alert":
             server_table_alert += '<tr style="background:red;"><td>' + str(i['id']) + \
                         '</td><td>' + str(i['name']) + \
+                        '</td><td>' + str(i['ip']) + \
                         '</td><td>' + str(i['mount']) + \
                         '</td><td>' + str(i['state']) + \
                         '</td><td>' + str(i['size_gb']) + \
@@ -101,6 +104,7 @@ def home():
         else:
             server_table_other += '<tr><td>' + str(i['id']) + \
                         '</td><td>' + str(i['name']) + \
+                        '</td><td>' + str(i['ip']) + \
                         '</td><td>' + str(i['mount']) + \
                         '</td><td>' + str(i['state']) + \
                         '</td><td>' + str(i['size_gb']) + \
@@ -164,14 +168,14 @@ def create_record():
 
     # If POST request is valid, form list of arguments from request and add new record to DB file.
     # If value is missing NULL will be assigned
-    # if not request.json or not 'name' in request.json:
-    #     return bad_request(400)
+    if not request.json or not 'name' in request.json:
+        return bad_request(400)
 
     server_list = (request.json.get('name'), request.json.get('mount'), request.json.get('state'), 
-                    request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'))
+                    request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), request.remote_addr)
     # SQL query
-    sql = ''' INSERT INTO servers(name,mount,state,size_gb,free_gb,used_perc)
-              VALUES(?,?,?,?,?,?) '''
+    sql = ''' INSERT INTO servers(name,mount,state,size_gb,free_gb,used_perc,ip)
+              VALUES(?,?,?,?,?,?,?) '''
 
     # Execute SQL query
     db_mod(DB_FILE, sql, server_list)
@@ -204,14 +208,15 @@ def update_record():
         return bad_request(400, 'used_perc value incorect or missing')
 
     # Form list of new values from request (no NULL values should be added, because of previous check)
-    server_list = (request.json.get('state'), request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), request.json.get('id'))
-
+    server_list = (request.json.get('state'), request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), request.remote_addr, request.json.get('id'))
+    
     # Build SQL query
     sql = ''' UPDATE servers
               SET state = ? ,
                   size_gb = ? ,
                   free_gb = ? ,
-                  used_perc = ?
+                  used_perc = ?,
+                  ip = ?
               WHERE id = ?'''
 
     # Execute SQL query
