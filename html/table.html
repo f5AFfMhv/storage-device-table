@@ -18,8 +18,13 @@
       background-color: gray;
     }
 
-    h3, p {
+    header {
+      display: flex;
+      align-items: center;
       color: white;
+      justify-content: space-between;
+      padding: 0px 5px;
+
     }
 
     table {
@@ -94,7 +99,7 @@
 </script>
 
 <body>
-  <h3>Server Disk Space Table</h3>
+  <header><h2>Server Disk Space Table</h2><p>Page auto refresh every minute.</p></header>
   <table class="table-info table">
     <thead>
       <tr>

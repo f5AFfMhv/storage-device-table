@@ -17,6 +17,8 @@ BASE = '/api/v1/resources/servers' # API uri
 BASE_URL = 'http://localhost:5000' + BASE
 DB_FILE = 'servers.db'
 HTML_TEMPLATE = 'html/table.html'
+TABLE_CONTENT_ORDER = ("id", "name", "ip", "mount", "state", "size_gb", "free_gb", "used_perc", "updated")
+STATE_COLOR = {'alert': 'red', 'warning': 'yellow', 'normal': 'lightgreen'}
 
 app = Flask(__name__)
 app.config["DEBUG"] = True # Enable stdout logging
@@ -60,65 +62,22 @@ def default_bad_request(e):
 # Server root page shows table with all records from DB
 @app.route('/', methods=['GET'])
 def home():
-    # Get data from API
-    r = requests.get(BASE_URL + '/all')
-    all_servers = r.json()
-    # Open html template
+    # Open table html template
     f = open(HTML_TEMPLATE,'r')
     server_table = f.read()
-    server_table_normal = ''
-    server_table_warning = ''
-    server_table_alert = ''
-    server_table_other = ''
-    # Add data from API call. Also make some filtering that records with alert state would be on top
-    for i in all_servers:
-        if i['state'] == "normal":
-            server_table_normal += '<tr style="background:lightgreen;"><td>' + str(i['id']) + \
-                        '</td><td>' + str(i['name']) + \
-                        '</td><td>' + str(i['ip']) + \
-                        '</td><td>' + str(i['mount']) + \
-                        '</td><td>' + str(i['state']) + \
-                        '</td><td>' + str(i['size_gb']) + \
-                        '</td><td>' + str(i['free_gb']) + \
-                        '</td><td>' + str(i['used_perc']) + \
-                        '</td><td>' + str(i['updated']) + \
-                        '</td></tr>'
-        elif i['state'] == "warning":
-            server_table_warning += '<tr style="background:yellow;"><td>' + str(i['id']) + \
-                        '</td><td>' + str(i['name']) + \
-                        '</td><td>' + str(i['ip']) + \
-                        '</td><td>' + str(i['mount']) + \
-                        '</td><td>' + str(i['state']) + \
-                        '</td><td>' + str(i['size_gb']) + \
-                        '</td><td>' + str(i['free_gb']) + \
-                        '</td><td>' + str(i['used_perc']) + \
-                        '</td><td>' + str(i['updated']) + \
-                        '</td></tr>'
-        elif i['state'] == "alert":
-            server_table_alert += '<tr style="background:red;"><td>' + str(i['id']) + \
-                        '</td><td>' + str(i['name']) + \
-                        '</td><td>' + str(i['ip']) + \
-                        '</td><td>' + str(i['mount']) + \
-                        '</td><td>' + str(i['state']) + \
-                        '</td><td>' + str(i['size_gb']) + \
-                        '</td><td>' + str(i['free_gb']) + \
-                        '</td><td>' + str(i['used_perc']) + \
-                        '</td><td>' + str(i['updated']) + \
-                        '</td></tr>'
-        else:
-            server_table_other += '<tr><td>' + str(i['id']) + \
-                        '</td><td>' + str(i['name']) + \
-                        '</td><td>' + str(i['ip']) + \
-                        '</td><td>' + str(i['mount']) + \
-                        '</td><td>' + str(i['state']) + \
-                        '</td><td>' + str(i['size_gb']) + \
-                        '</td><td>' + str(i['free_gb']) + \
-                        '</td><td>' + str(i['used_perc']) + \
-                        '</td><td>' + str(i['updated']) + \
-                        '</td></tr>'
-        
-    server_table += server_table_alert + server_table_warning + server_table_normal + server_table_other + \
-        '</tbody></table><a href=https://martynas.me target="_blank">By Martynas J.</a>'
+    # Make API call to get results for every state
+    for device_state in STATE_COLOR:
+        request = requests.get(BASE_URL + '?state=' + device_state).json()
+        # Depending on current state, make table row with specified color background
+        for record in request:
+            server_table += '<tr style="background:' + STATE_COLOR.get(device_state) + ';">'
+            # Place record data in TABLE_CONTENT_ORDER variable defined order
+            for content in TABLE_CONTENT_ORDER:
+                server_table += '<td>' + str(record[content]) + '</td>'
+            server_table += '</tr>'
+    # Add shameless plug
+    server_table += '</tbody></table><a href=https://martynas.me target="_blank">By Martynas J.</a></body></html>'
+    # Return html page with complete table
     return server_table
 
 # API OBTAIN INFORMATION
