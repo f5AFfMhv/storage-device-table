@@ -5,7 +5,7 @@
 # RESTful API with flask - https://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
 # Flask tutorial - https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
 # Insert data to sqlite db - https://www.sqlitetutorial.net/sqlite-python/insert/
-# HTML filter table example - https://morioh.com/p/51dbc30377fc
+# HTML table filter example - https://morioh.com/p/51dbc30377fc
 
 from flask import Flask, jsonify, request, make_response
 from datetime import datetime
@@ -117,7 +117,8 @@ def home():
                         '</td><td>' + str(i['updated']) + \
                         '</td></tr>'
         
-    server_table += server_table_alert + server_table_warning + server_table_normal + server_table_other +'</tbody></table><p>by Martynas J.</p></body></html>' 
+    server_table += server_table_alert + server_table_warning + server_table_normal + server_table_other + \
+        '</tbody></table><a href=https://martynas.me target="_blank">By Martynas J.</a>'
     return server_table
 
 # API OBTAIN INFORMATION
