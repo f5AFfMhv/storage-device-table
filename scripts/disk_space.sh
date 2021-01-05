@@ -16,13 +16,13 @@ REQUEST="/tmp/request"
 
 # For every storage device in list, get information about its size, free space and usage in percentage.
 for MOUNT in ${MOUNT_LIST[@]}; do
-    SIZE=$(df -h | grep $MOUNT | awk '{print $2}')
-    FREE=$(df -h | grep $MOUNT | awk '{print $4}')
+    SIZE=$(df -BGB | grep $MOUNT | awk '{print $2}')
+    FREE=$(df -BGB | grep $MOUNT | awk '{print $4}')
     USE=$(df -h | grep $MOUNT | awk '{print $5}')
     # From gathered information determine storage device state (alert, warning, normal)
-    if (( ${FREE%?} < $ALERT )); then
+    if (( ${FREE%??} < $ALERT )); then
         STATE=alert
-    elif (( ${FREE%?} < $WARNING )); then
+    elif (( ${FREE%??} < $WARNING )); then
         STATE=warning
     else
         STATE=normal
@@ -35,12 +35,12 @@ for MOUNT in ${MOUNT_LIST[@]}; do
     if [[ -z $ID ]]; then
         echo "Device $MOUNT doesnt exist. Creating..."
         # Form API request in JSON format (\" preserves " character in JSON request)
-        # ${var%?} - removes last symbol from variable
+        # ${var%??} - removes last 2 symbols from variable
         echo {\"name\":\"$HOSTNAME\", \
             \"mount\":\"$MOUNT\", \
             \"state\":\"$STATE\", \
-            \"size_gb\":${SIZE%?}, \
-            \"free_gb\":${FREE%?}, \
+            \"size_gb\":${SIZE%??}, \
+            \"free_gb\":${FREE%??}, \
             \"used_perc\":${USE%?}} > $REQUEST
 
         # Make API POST call
@@ -52,11 +52,11 @@ for MOUNT in ${MOUNT_LIST[@]}; do
     else
         echo "Device $MOUNT exists with id: $ID. Updating..."
         # Form API request in JSON format (\" preserves " character in JSON request)
-        # ${var%?} - removes last symbol from variable
+        # ${var%??} - removes last 2 symbols from variable
         echo {\"id\":\"$ID\", \
             \"state\":\"$STATE\", \
-            \"size_gb\":${SIZE%?}, \
-            \"free_gb\":${FREE%?}, \
+            \"size_gb\":${SIZE%??}, \
+            \"free_gb\":${FREE%??}, \
             \"used_perc\":${USE%?}} > $REQUEST
 
         # Make API PUT call
