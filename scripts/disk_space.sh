@@ -7,10 +7,10 @@
 # "Server Disk Space" server IP or resolvable fqdn
 SERVER="192.168.0.2"
 # List of mounted storage devices to be monitored
-MOUNT_LIST=("/mint--vg-root" "/mnt/backup" "/mnt/DATA")
+MOUNT_LIST=("/mint--vg-root" "/mnt/DATA")
 # Treshold values of free space in GB to determine device state
-ALERT=200 # If device has less free space in GB than this value, device will be assignet alert state
-WARNING=430 # If device has less free space in GB than this value, device will be assignet warning state
+ALERT=80 # If device has less free space in GB than this value, device will be assignet alert state
+WARNING=150 # If device has less free space in GB than this value, device will be assignet warning state
 # Temporary request file location
 REQUEST="/tmp/request"
 
