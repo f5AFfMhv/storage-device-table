@@ -11,13 +11,14 @@ from flask import Flask, jsonify, request, make_response
 from datetime import datetime
 import sqlite3
 import requests
+import graphs # Script for creating graphs
 
 # Variables
 BASE = '/api/v1/resources/servers' # API uri
 BASE_URL = 'http://localhost:5000' + BASE
 DB_FILE = 'servers.db'
 HTML_TEMPLATE = 'html/table.html'
-TABLE_CONTENT_ORDER = ("id", "name", "ip", "mount", "state", "size_gb", "free_gb", "used_perc", "updated")
+TABLE_CONTENT_ORDER = ("id", "name", "ip", "device", "state", "size_gb", "free_gb", "used_perc", "updated")
 STATE_COLOR = {'alert': 'red', 'warning': 'yellow', 'normal': 'lightgreen'}
 
 app = Flask(__name__)
@@ -73,12 +74,21 @@ def home():
             server_table += '<tr style="background:' + STATE_COLOR.get(device_state) + ';">'
             # Place record data in TABLE_CONTENT_ORDER variable defined order
             for content in TABLE_CONTENT_ORDER:
-                server_table += '<td>' + str(record[content]) + '</td>'
+                # Add link to graph on device name
+                if content == "name":
+                    server_table += '<td><a href=' + BASE_URL + "/graph/" + str(record[content]) + ">" + str(record[content]) + '</a></td>'
+                else:
+                    server_table += '<td>' + str(record[content]) + '</td>'
             server_table += '</tr>'
     # Add shameless plug
     server_table += '</tbody></table><a href=https://martynas.me target="_blank">By Martynas J.</a></body></html>'
     # Return html page with complete table
     return server_table
+
+# Return host storage bar graph when clicked on hostname
+@app.route(BASE + '/graph/<name>', methods=['GET'])
+def get_graph(name):
+    return graphs.create_graph(BASE_URL, name).show()
 
 # API OBTAIN INFORMATION
 # Get all records from DB in JSON
@@ -91,11 +101,11 @@ def get_all_records():
 # Get specific records from DB
 @app.route(BASE, methods=['GET'])
 def get_record():
-    # Filter API requests by record ID, hostname, state or mount point
+    # Filter API requests by record ID, hostname, state or device
     id = request.args.get('id')
     state = request.args.get('state')
     name = request.args.get('name')
-    mount = request.args.get('mount')
+    device = request.args.get('device')
 
     # Build SQL query from given requests
     sql = "SELECT * FROM servers WHERE"
@@ -110,10 +120,10 @@ def get_record():
     if name:
         sql += ' name=? AND'
         to_filter.append(name)
-    if mount:
-        sql += ' mount=? AND'
-        to_filter.append(mount)
-    if not (id or state or name or mount):
+    if device:
+        sql += ' device=? AND'
+        to_filter.append(device)
+    if not (id or state or name or device):
         return page_not_found(404)
 
     # Remove trailing 'AND' from sql query
@@ -136,11 +146,11 @@ def create_record():
     if not request.json or not 'name' in request.json:
         return bad_request(400)
 
-    server_list = (request.json.get('name'), request.json.get('mount'), request.json.get('state'), 
+    server_list = (request.json.get('name'), request.json.get('device'), request.json.get('state'), 
                     request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), 
                     request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     # SQL query
-    sql = ''' INSERT INTO servers(name,mount,state,size_gb,free_gb,used_perc,ip,updated)
+    sql = ''' INSERT INTO servers(name,device,state,size_gb,free_gb,used_perc,ip,updated)
               VALUES(?,?,?,?,?,?,?,?) '''
 
     # Execute SQL query
@@ -152,7 +162,7 @@ def create_record():
     return jsonify({'server': latest_server}), 201
 
 # API UPDATE EXISTING RESOURCE
-# Update existing record by id with new values (can't change server name or mount point)
+# Update existing record by id with new values (can't change server name or device)
 @app.route(BASE, methods=['PUT'])
 def update_record():
     # Check request validity
