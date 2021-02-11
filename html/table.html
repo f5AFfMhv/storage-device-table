@@ -3,7 +3,6 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="60">
   <title>Servers Disk Space Table</title>
   <style>
     input {
@@ -98,8 +97,29 @@
   })(document);
 </script>
 
+<script type="text/JavaScript">
+  ProgressCountdown(60, 'pageBeginCountdown')
+
+  function ProgressCountdown(timeleft, bar) {
+    return new Promise((resolve, reject) => {
+      var countdownTimer = setInterval(() => {
+        timeleft--;
+        document.getElementById(bar).value = timeleft;
+        if (timeleft <= 0) {
+          clearInterval(countdownTimer);
+          resolve(true);
+          location.reload(true);
+        }
+    }, 1000);
+  });
+}
+</script>
+
 <body>
-  <header><h2>Server Disk Space Table v3</h2><p>Page auto refresh every minute.</p></header>
+  <header>
+    <h2>Storage Device Table</h2>
+    <progress value="60" max="60" id="pageBeginCountdown"></progress>
+  </header>
   <table class="table-info table">
     <thead>
       <tr>

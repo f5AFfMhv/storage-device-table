@@ -11,36 +11,41 @@
 
 import plotly.graph_objects as go
 import requests
-import sys
 
-# Chart data
-device = []
-used = []
-free = []
+class figure:
+    def __init__(self, BASE_URL, DEVICE):
+        self.url = BASE_URL
+        self.dev = DEVICE
 
-# Create empty graph object
-fig = go.Figure()
+        # Graph data
+        self.devices = []
+        self.used = []
+        self.free = []
 
-def create_graph(BASE_URL, NAME):
-    # Get data from API
-    r = requests.get(BASE_URL + '?name=' + NAME)
-    server = r.json()
-    # Parse data to list for ploting
-    for dev in server:
-        device.append(dev.get('device'))
-        free.append(dev.get('free_gb'))
-        used.append(dev.get('size_gb') - dev.get('free_gb'))
+        # Create empty graph object
+        self.fig = go.Figure()
 
-    # Add data to graph. First used disk space stacked by free disk space
-    fig.add_trace(go.Bar(x=device, y=used, name='Used space, GB'))
-    fig.add_trace(go.Bar(x=device, y=free, name='Free space, GB'))
+    def create_graph(self):
+        # Get data from API
+        self.r = requests.get(self.url + '?name=' + self.dev)
+        self.server = self.r.json()
+        # Parse data to list for ploting
+        for self.d in self.server:
+            self.devices.append(self.d.get('device'))
+            self.free.append(self.d.get('free_gb'))
+            self.used.append(self.d.get('size_gb') - self.d.get('free_gb'))
 
-    # Format chart representation
-    fig.update_layout(title=NAME + " storage devices usage", title_font_color="red", title_font_size=30)
-    fig.update_layout(hovermode="x")
-    fig.update_layout(legend_title_text = "Storage devices:")
-    fig.update_layout(barmode='stack')
-    fig.update_xaxes(categoryorder='total ascending')
-    fig.update_yaxes(title_text='GB')
+        # Add data to graph. First used disk space stacked by free disk space
+        self.fig.add_trace(go.Bar(x=self.devices, y=self.used, name='Used space, GB'))
+        self.fig.add_trace(go.Bar(x=self.devices, y=self.free, name='Free space, GB'))
 
-    return fig
+        # Format chart representation
+        self.fig.update_layout(overwrite=True, title=self.dev + " storage devices usage", title_font_color="red", title_font_size=30)
+        self.fig.update_layout(hovermode="x")
+        self.fig.update_layout(legend_title_text = "Storage devices:")
+        self.fig.update_layout(barmode='stack')
+        self.fig.update_xaxes(categoryorder='total ascending')
+        self.fig.update_yaxes(title_text='GB')
+
+        return self.fig
+

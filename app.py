@@ -11,18 +11,23 @@ from flask import Flask, jsonify, request, make_response
 from datetime import datetime
 import sqlite3
 import requests
+import plotly.io as pio
 import graphs # Script for creating graphs
 
 # Variables
-BASE = '/api/v1/resources/servers' # API uri
-BASE_URL = 'http://localhost:5000' + BASE
+BASE = 'http://localhost:5000'
+API = '/api/v1/resources/servers' # API uri
+BASE_URL = BASE + API
 DB_FILE = 'servers.db'
 HTML_TEMPLATE = 'html/table.html'
+IFRAME_GRAPH = 'iframe_figures/figure_0.html'
 TABLE_CONTENT_ORDER = ("id", "name", "ip", "device", "state", "size_gb", "free_gb", "used_perc", "updated")
 STATE_COLOR = {'alert': 'red', 'warning': 'yellow', 'normal': 'lightgreen'}
 
 app = Flask(__name__)
 app.config["DEBUG"] = True # Enable stdout logging
+
+pio.renderers.default = "iframe" # How to render graphs
 
 # Function to convert data from SQLite DB to dictionary (from "API with flask" tutorial)
 def dict_factory(cursor, row):
@@ -76,7 +81,7 @@ def home():
             for content in TABLE_CONTENT_ORDER:
                 # Add link to graph on device name
                 if content == "name":
-                    server_table += '<td><a href=' + BASE_URL + "/graph/" + str(record[content]) + ">" + str(record[content]) + '</a></td>'
+                    server_table += '<td><a href=' + BASE + "/graph/" + str(record[content]) + ' target="_blank">' + str(record[content]) + '</a></td>'
                 else:
                     server_table += '<td>' + str(record[content]) + '</td>'
             server_table += '</tr>'
@@ -86,20 +91,25 @@ def home():
     return server_table
 
 # Return host storage bar graph when clicked on hostname
-@app.route(BASE + '/graph/<name>', methods=['GET'])
+@app.route('/graph/<name>', methods=['GET'])
 def get_graph(name):
-    return graphs.create_graph(BASE_URL, name).show()
+    fig = graphs.figure(BASE_URL, name)
+    fig.create_graph().show()
+    # Open graph iframe html 
+    f = open(IFRAME_GRAPH,'r')
+    graph = f.read()
+    return graph
 
 # API OBTAIN INFORMATION
 # Get all records from DB in JSON
-@app.route(BASE + '/all', methods=['GET'])
+@app.route(API + '/all', methods=['GET'])
 def get_all_records():
     sql = ''' SELECT * FROM servers '''
     all_servers = db_read(DB_FILE, sql)
     return jsonify(all_servers)
 
 # Get specific records from DB
-@app.route(BASE, methods=['GET'])
+@app.route(API, methods=['GET'])
 def get_record():
     # Filter API requests by record ID, hostname, state or device
     id = request.args.get('id')
@@ -138,7 +148,7 @@ def get_record():
 
 # API CREATE NEW RESOURCE
 # Create new server record. Record ID is incremented automaticaly by DB, so no need to pass record id
-@app.route(BASE, methods=['POST'])
+@app.route(API, methods=['POST'])
 def create_record():
 
     # If POST request is valid, form list of arguments from request and add new record to DB file.
@@ -163,7 +173,7 @@ def create_record():
 
 # API UPDATE EXISTING RESOURCE
 # Update existing record by id with new values (can't change server name or device)
-@app.route(BASE, methods=['PUT'])
+@app.route(API, methods=['PUT'])
 def update_record():
     # Check request validity
     if not request.json or not 'id' in request.json:
@@ -205,7 +215,7 @@ def update_record():
 
 # API DELETE RECORD
 # Delete existing record from DB file
-@app.route(BASE, methods=['DELETE'])
+@app.route(API, methods=['DELETE'])
 def delete_record():
     # Check if record exists
     id = request.args.get('id')
