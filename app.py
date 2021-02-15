@@ -100,7 +100,7 @@ def home():
         <a href=' + BASE + '/linux_agent target="_blank">➡️ Agent for linux</a>\
         <br><br>'
     # Add shameless plug
-    server_table += '<a href=https://martynas.me target="_blank">By Martynas J.</a></body></html>'
+    server_table += '<hr></body><footer class="span"><a href=https://martynas.me target="_blank">By Martynas J.</a><p>2021</p></footer></html>'
     # Return html page with complete table
     return server_table
 

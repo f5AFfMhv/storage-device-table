@@ -9,13 +9,19 @@
 # Main variables
 # "Server Disk Space" server IP or resolvable fqdn
 SERVER="192.168.0.2"
-# List of mounted storage devices to be monitored
-DEVICE_LIST=$(df -x squashfs -x tmpfs -x devtmpfs --output=target | tail -n +2)
+# List of mounted storage devices to be monitored. Add -x options for file system types you wan to exclude
+DEVICE_LIST=$(df -x squashfs -x tmpfs -x devtmpfs -x overlay --output=target | tail -n +2)
 # Treshold values of free space in GB to determine device state
-ALERT=80 # If device has less free space in GB than this value, device will be assignet alert state
-WARNING=150 # If device has less free space in GB than this value, device will be assignet warning state
+ALERT=20 # If device has less free space in GB than this value, device will be assignet alert state
+WARNING=50 # If device has less free space in GB than this value, device will be assignet warning state
 # Temporary request file location
 REQUEST="/tmp/request"
+
+# Check if jq installed
+if ! command -v jq &> /dev/null; then
+    echo "Please install jq - command-line JSON processor."
+    exit 1
+fi
 
 # For every storage device in list, get information about its size, free space and usage in percentage.
 for DEVICE in $DEVICE_LIST; do

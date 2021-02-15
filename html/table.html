@@ -17,10 +17,10 @@
       background-color: gray;
     }
 
-    header {
+    .span {
       display: flex;
       align-items: center;
-      color: white;
+      color: black;
       justify-content: space-between;
       padding: 0px 5px;
 
@@ -43,7 +43,7 @@
     }
 
     p {
-      color: white;
+      color: black;
     }
 
     a {
@@ -120,12 +120,16 @@
 </script>
 
 <body>
-  <header>
-    <h2>Storage Device Table</h2>
-    <progress value="60" max="60" id="pageBeginCountdown"></progress>
-  </header>
   <table class="table-info table">
     <thead>
+      <tr>
+        <td colspan=100%>
+          <div class="span">
+            <h2>Storage Device Table v1</h2>
+            <progress value="60" max="60" id="pageBeginCountdown"></progress>
+          </div>
+        </td>
+      </tr>
       <tr>
         <th>ID</th>
         <th>Name</th>
