@@ -47,4 +47,3 @@ class figure:
         self.fig.update_yaxes(title_text='GB')
 
         return self.fig
-

@@ -7,7 +7,7 @@
 # Insert data to sqlite db - https://www.sqlitetutorial.net/sqlite-python/insert/
 # HTML table filter example - https://morioh.com/p/51dbc30377fc
 
-from flask import Flask, jsonify, request, make_response, send_file
+from flask import Flask, jsonify, request, make_response, send_file, redirect
 from datetime import datetime
 import sqlite3
 import requests
@@ -21,7 +21,7 @@ BASE_URL = BASE + API
 DB_FILE = 'servers.db'
 HTML_TEMPLATE = 'html/table.html'
 IFRAME_GRAPH = 'iframe_figures/figure_0.html'
-TABLE_CONTENT_ORDER = ("id", "name", "ip", "device", "state", "size_gb", "free_gb", "used_perc", "updated")
+TABLE_CONTENT_ORDER = ("id", "name", "ip", "device", "state", "size_gb", "free_gb", "used_perc", "updated", "delete")
 STATE_COLOR = {'alert': 'red', 'warning': 'yellow', 'normal': 'lightgreen'}
 
 app = Flask(__name__)
@@ -84,14 +84,21 @@ def home():
                     # Add link to graph on device name
                     if content == "name":
                         server_table += '<td><a href=' + BASE + "/graph/" + str(record[content]) + ' target="_blank">' + str(record[content]) + '</a></td>'
+                    # Add link to date coresponding record
+                    elif content == "delete":
+                        server_table += '<td><a href=' + BASE + "/remove/" + str(record["id"]) +\
+                            '><img alt="DEL" src=' +  BASE +  '/delete.png width=20 height=20></a></td>'
+                    # Add data from DB
                     else:
                         server_table += '<td>' + str(record[content]) + '</td>'
                 server_table += '</tr>'
         else:
-            print("No devices with state ", device_state)
+            pass
 
     # Add agent download links
-    server_table += '</tbody></table><br><p>Downloads:</p><a href=' + BASE + '/linux_agent target="_blank">Agent for linux</a><br><br>'
+    server_table += '</tbody></table><br><p>Downloads:</p>\
+        <a href=' + BASE + '/linux_agent target="_blank">➡️ Agent for linux</a>\
+        <br><br>'
     # Add shameless plug
     server_table += '<a href=https://martynas.me target="_blank">By Martynas J.</a></body></html>'
     # Return html page with complete table
@@ -108,6 +115,12 @@ def get_graph(name):
     graph = f.read()
     return graph
 
+# Delete device from table
+@app.route('/remove/<id>', methods=['GET'])
+def delete(id):
+    requests.delete(BASE_URL + '?id=' + id)
+    return redirect(BASE, code=302)
+
 # Allow to download linux agent script
 @app.route('/linux_agent')
 def download_linux_agent():
@@ -118,6 +131,12 @@ def download_linux_agent():
 @app.route('/favicon.ico')
 def favicon():
 	path = "img/favicon.ico"
+	return send_file(path, as_attachment=True)
+
+# Return delete icon
+@app.route('/delete.png')
+def delete_icon():
+	path = "img/delete.png"
 	return send_file(path, as_attachment=True)
 
 # API OBTAIN INFORMATION
