@@ -42,7 +42,6 @@ class figure:
         # Format chart representation
         self.fig.update_layout(overwrite=True, title=self.dev + " storage devices usage", title_font_color="red", title_font_size=30)
         self.fig.update_layout(hovermode="x")
-        self.fig.update_layout(legend_title_text = "Storage devices:")
         self.fig.update_layout(barmode='stack')
         self.fig.update_xaxes(categoryorder='total ascending')
         self.fig.update_yaxes(title_text='GB')

@@ -7,7 +7,7 @@
 # Insert data to sqlite db - https://www.sqlitetutorial.net/sqlite-python/insert/
 # HTML table filter example - https://morioh.com/p/51dbc30377fc
 
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, send_file
 from datetime import datetime
 import sqlite3
 import requests
@@ -25,7 +25,7 @@ TABLE_CONTENT_ORDER = ("id", "name", "ip", "device", "state", "size_gb", "free_g
 STATE_COLOR = {'alert': 'red', 'warning': 'yellow', 'normal': 'lightgreen'}
 
 app = Flask(__name__)
-app.config["DEBUG"] = True # Enable stdout logging
+#app.config["DEBUG"] = True # Enable stdout logging
 
 pio.renderers.default = "iframe" # How to render graphs
 
@@ -73,32 +73,52 @@ def home():
     server_table = f.read()
     # Make API call to get results for every state
     for device_state in STATE_COLOR:
-        request = requests.get(BASE_URL + '?state=' + device_state).json()
-        # Depending on current state, make table row with specified color background
-        for record in request:
-            server_table += '<tr style="background:' + STATE_COLOR.get(device_state) + ';">'
-            # Place record data in TABLE_CONTENT_ORDER variable defined order
-            for content in TABLE_CONTENT_ORDER:
-                # Add link to graph on device name
-                if content == "name":
-                    server_table += '<td><a href=' + BASE + "/graph/" + str(record[content]) + ' target="_blank">' + str(record[content]) + '</a></td>'
-                else:
-                    server_table += '<td>' + str(record[content]) + '</td>'
-            server_table += '</tr>'
+        request = requests.get(BASE_URL + '?state=' + device_state)
+        # Check if there is any device with state we are checking
+        if request.status_code != 404:
+            # Depending on current state, make table row with specified color background
+            for record in request.json():
+                server_table += '<tr style="background:' + STATE_COLOR.get(device_state) + ';">'
+                # Place record data in TABLE_CONTENT_ORDER variable defined order
+                for content in TABLE_CONTENT_ORDER:
+                    # Add link to graph on device name
+                    if content == "name":
+                        server_table += '<td><a href=' + BASE + "/graph/" + str(record[content]) + ' target="_blank">' + str(record[content]) + '</a></td>'
+                    else:
+                        server_table += '<td>' + str(record[content]) + '</td>'
+                server_table += '</tr>'
+        else:
+            print("No devices with state ", device_state)
+
+    # Add agent download links
+    server_table += '</tbody></table><br><p>Downloads:</p><a href=' + BASE + '/linux_agent target="_blank">Agent for linux</a><br><br>'
     # Add shameless plug
-    server_table += '</tbody></table><a href=https://martynas.me target="_blank">By Martynas J.</a></body></html>'
+    server_table += '<a href=https://martynas.me target="_blank">By Martynas J.</a></body></html>'
     # Return html page with complete table
     return server_table
 
 # Return host storage bar graph when clicked on hostname
 @app.route('/graph/<name>', methods=['GET'])
 def get_graph(name):
+    # Generate graph with plotly as iframe
     fig = graphs.figure(BASE_URL, name)
     fig.create_graph().show()
     # Open graph iframe html 
     f = open(IFRAME_GRAPH,'r')
     graph = f.read()
     return graph
+
+# Allow to download linux agent script
+@app.route('/linux_agent')
+def download_linux_agent():
+	path = "scripts/disk_space.sh"
+	return send_file(path, as_attachment=True)
+
+# Return favicon
+@app.route('/favicon.ico')
+def favicon():
+	path = "img/favicon.ico"
+	return send_file(path, as_attachment=True)
 
 # API OBTAIN INFORMATION
 # Get all records from DB in JSON
