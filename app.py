@@ -154,7 +154,7 @@ def file_return(file):
 def export_table():
     request = requests.get(BASE_URL + '/all').json()
     export = pd.read_json(json.dumps(request))
-    export.to_csv("SD_table.csv")
+    export.to_csv("SD_table.csv", index=False, columns=['id', 'name', 'ip', 'device', 'state', 'size_gb', 'free_gb', 'used_perc', 'updated'])
     return send_file("SD_table.csv", as_attachment=True)
 
 
