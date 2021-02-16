@@ -6,8 +6,9 @@
 # Flask tutorial - https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
 # Insert data to sqlite db - https://www.sqlitetutorial.net/sqlite-python/insert/
 # HTML table filter example - https://morioh.com/p/51dbc30377fc
+# Flask render JINJA template - https://hackersandslackers.com/flask-jinja-templates/
 
-from flask import Flask, jsonify, request, make_response, send_file, redirect
+from flask import Flask, jsonify, request, make_response, send_file, redirect, render_template
 from datetime import datetime
 import sqlite3
 import requests
@@ -21,10 +22,8 @@ BASE = 'http://localhost:5000'
 API = '/api/v1/resources/servers' # API uri
 BASE_URL = BASE + API
 DB_FILE = 'servers.db'
-HTML_TEMPLATE = 'html/index.html'
 IFRAME_GRAPH = 'iframe_figures/figure_0.html'
-TABLE_CONTENT_ORDER = ("id", "name", "ip", "device", "state", "size_gb", "free_gb", "used_perc", "updated", "delete")
-STATE_COLOR = {'alert': 'red', 'warning': 'yellow', 'normal': 'lightgreen'}
+STATE_ORDER= ["alert", "warning", "normal"]
 
 app = Flask(__name__)
 #app.config["DEBUG"] = True # Enable stdout logging
@@ -70,41 +69,16 @@ def default_bad_request(e):
 # Server root page shows table with all records from DB
 @app.route('/', methods=['GET'])
 def home():
-    # Open table html template
-    f = open(HTML_TEMPLATE,'r')
-    server_table = f.read()
-    # Make API call to get results for every state
-    for device_state in STATE_COLOR:
+    row=[] # List of table rows to be rendered
+    for device_state in STATE_ORDER:
+        # Make API call to get results for every state individualy
         request = requests.get(BASE_URL + '?state=' + device_state)
-        # Check if there is any device with state we are checking
+        # Is there is any device with state we are checking?
         if request.status_code != 404:
-            # Depending on current state, make table row with specified color background
-            for record in request.json():
-                server_table += '<tr style="background:' + STATE_COLOR.get(device_state) + ';">'
-                # Place record data in TABLE_CONTENT_ORDER variable defined order
-                for content in TABLE_CONTENT_ORDER:
-                    # Add link to graph on device name
-                    if content == "name":
-                        server_table += '<td><a href=' + BASE + "/graph/" + str(record[content]) + ' target="_blank">' + str(record[content]) + '</a></td>'
-                    # Add link to date coresponding record
-                    elif content == "delete":
-                        server_table += '<td><a href=' + BASE + "/remove/" + str(record["id"]) +\
-                            '><img alt="DEL" src=' +  BASE +  '/delete.png width=20 height=20></a></td>'
-                    # Add data from DB
-                    else:
-                        server_table += '<td>' + str(record[content]) + '</td>'
-                server_table += '</tr>'
-        else:
-            pass
-
-    # Add agent download links
-    server_table += '</tbody></table><br><p>Downloads:</p>\
-        <a href=' + BASE + '/download/linux_agent>➡️ Agent for linux</a>\
-        <br><br>'
-    # Add shameless plug
-    server_table += '</body><br><footer><hr><a href=https://martynas.me target="_blank">Martynas J.</a> 2021</footer></html>'
-    # Return html page with complete table
-    return server_table
+            # Collect information for table row render
+            data = request.json()
+            row.extend(data)
+    return render_template('index.html', row=row)
 
 # Return host storage bar graph when clicked on hostname
 @app.route('/graph/<name>', methods=['GET'])
@@ -140,11 +114,11 @@ def file_return(file):
     elif file == "delete.png":
         path = "img/delete.png"
     elif file == "style.css":
-        path = "html/style.css"
+        path = "templates/style.css"
     elif file == "filter.js":
-        path = "html/filter.js"
+        path = "templates/filter.js"
     elif file == "refresh_bar.js":
-        path = "html/refresh_bar.js"
+        path = "templates/refresh_bar.js"
     else:
         return page_not_found(404)    
     return send_file(path, as_attachment=True)

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Servers Disk Space Table</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<script src="filter.js"></script>
+<script src="refresh_bar.js"></script>
+
+<body>
+  <table class="table-info table">
+    <thead>
+      <tr>
+        <td colspan=100%>
+          <div class="span">
+            <h2>Storage Device Table</h2>
+            <a href=http://localhost:5000/export>[Export .csv]</a>
+            <progress style="width:80px;" value="60" max="60" id="pageBeginCountdown"></progress>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>IP</th>
+        <th>Device</th>
+        <th>Disk State</th>
+        <th>Size GB</th>
+        <th>Free GB</th>
+        <th>Usage %</th>
+        <th>Last Update</th>
+        <th></th>
+      </tr>
+      <tr>
+        <td colspan=100%><input type="search" class="light-table-filter" data-table="table-info" placeholder="SEARCH">
+        </td>
+      </tr>
+    </thead>
+    <tbody>
+
+    {% for i in row %}
+      {% if i.state == "normal" %}
+        <tr style="background:lightgreen;">
+      {% elif i.state == "warning" %}
+        <tr style="background:yellow;">
+      {% else %}
+        <tr style="background:red;">
+      {% endif %}
+        <td>{{ i.id }}</td>
+        <td><a href="graph/{{ i.name }}" target="_blank">{{ i.name }}</a></td>
+        <td>{{ i.ip }}</td>
+        <td>{{ i.device }}</td>
+        <td>{{ i.state }}</td>
+        <td>{{ i.size_gb }}</td>
+        <td>{{ i.free_gb }}</td>
+        <td>{{ i.used_perc}}</td>
+        <td>{{ i.updated }}</td>
+        <td><a href="remove/{{ i.id }}"><img alt="DEL" src="delete.png" width=20 height=20></a></td>
+      </tr>
+    {% endfor %}
+    
+    </tbody>
+  </table>
+  <br>
+  <p>Downloads:</p>
+  <a href="download/linux_agent">➡️ Agent for linux</a>
+  <br><br>
+</body>
+<br>
+<footer>
+  <hr>
+  <a href=https://martynas.me target="_blank">Martynas J.</a> v1.0 2021
+</footer>
+</html>

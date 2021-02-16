@@ -1,7 +1,7 @@
 #FROM python:3.8.5
 FROM python_sdm:latest
 WORKDIR /app
-COPY html /app/html/
+COPY templates /app/templates/
 COPY img /app/img/
 COPY scripts /app/scripts/
 COPY app.py /app
