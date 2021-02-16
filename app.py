@@ -13,13 +13,15 @@ import sqlite3
 import requests
 import plotly.io as pio
 import graphs # Script for creating graphs
+import json
+import pandas as pd
 
 # Variables
 BASE = 'http://localhost:5000'
 API = '/api/v1/resources/servers' # API uri
 BASE_URL = BASE + API
 DB_FILE = 'servers.db'
-HTML_TEMPLATE = 'html/table.html'
+HTML_TEMPLATE = 'html/index.html'
 IFRAME_GRAPH = 'iframe_figures/figure_0.html'
 TABLE_CONTENT_ORDER = ("id", "name", "ip", "device", "state", "size_gb", "free_gb", "used_perc", "updated", "delete")
 STATE_COLOR = {'alert': 'red', 'warning': 'yellow', 'normal': 'lightgreen'}
@@ -97,10 +99,10 @@ def home():
 
     # Add agent download links
     server_table += '</tbody></table><br><p>Downloads:</p>\
-        <a href=' + BASE + '/linux_agent target="_blank">➡️ Agent for linux</a>\
+        <a href=' + BASE + '/download/linux_agent>➡️ Agent for linux</a>\
         <br><br>'
     # Add shameless plug
-    server_table += '<hr></body><footer class="span"><a href=https://martynas.me target="_blank">By Martynas J.</a><p>2021</p></footer></html>'
+    server_table += '</body><br><footer><hr><a href=https://martynas.me target="_blank">Martynas J.</a> 2021</footer></html>'
     # Return html page with complete table
     return server_table
 
@@ -121,23 +123,40 @@ def delete(id):
     requests.delete(BASE_URL + '?id=' + id)
     return redirect(BASE, code=302)
 
-# Allow to download linux agent script
-@app.route('/linux_agent')
-def download_linux_agent():
-	path = "scripts/disk_space.sh"
-	return send_file(path, as_attachment=True)
+# Allow to download agents
+@app.route('/download/<agent>')
+def download(agent):
+    if agent == "linux_agent":
+	    path = "scripts/disk_space.sh"
+    else:
+        return page_not_found(404)
+    return send_file(path, as_attachment=True)
 
-# Return favicon
-@app.route('/favicon.ico')
-def favicon():
-	path = "img/favicon.ico"
-	return send_file(path, as_attachment=True)
+# Return file
+@app.route('/<file>')
+def file_return(file):
+    if file == "favicon.ico":
+	    path = "img/favicon.ico"
+    elif file == "delete.png":
+        path = "img/delete.png"
+    elif file == "style.css":
+        path = "html/style.css"
+    elif file == "filter.js":
+        path = "html/filter.js"
+    elif file == "refresh_bar.js":
+        path = "html/refresh_bar.js"
+    else:
+        return page_not_found(404)    
+    return send_file(path, as_attachment=True)
 
-# Return delete icon
-@app.route('/delete.png')
-def delete_icon():
-	path = "img/delete.png"
-	return send_file(path, as_attachment=True)
+# Generate CSV
+@app.route('/export')
+def export_table():
+    request = requests.get(BASE_URL + '/all').json()
+    export = pd.read_json(json.dumps(request))
+    export.to_csv("SD_table.csv")
+    return send_file("SD_table.csv", as_attachment=True)
+
 
 # API OBTAIN INFORMATION
 # Get all records from DB in JSON
@@ -194,6 +213,15 @@ def create_record():
     # If value is missing NULL will be assigned
     if not request.json or not 'name' in request.json:
         return bad_request(400)
+    # Check if request passed valid values for record
+    if type(request.json.get('state')) != str or request.json.get('state') == None:
+        return bad_request(400, 'state value incorect or missing')
+    if type(request.json.get('size_gb')) != int or request.json.get('size_gb') == None:
+        return bad_request(400, 'size_gb value incorect or missing')
+    if type(request.json.get('free_gb')) != int or request.json.get('free_gb') == None:
+        return bad_request(400, 'free_gb value incorect or missing')
+    if type(request.json.get('used_perc')) != int or request.json.get('used_perc') == None:
+        return bad_request(400, 'used_perc value incorect or missing')
 
     server_list = (request.json.get('name'), request.json.get('device'), request.json.get('state'), 
                     request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), 

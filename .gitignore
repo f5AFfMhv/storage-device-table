@@ -3,3 +3,4 @@ __pycache__/
 tests/
 iframe_figures/
 servers.db
+SD_table.csv
