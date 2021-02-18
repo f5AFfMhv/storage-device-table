@@ -1,4 +1,5 @@
 /* Code By Webdevtrick ( https://webdevtrick.com ) */
+/* Filters html table for matching rows */
 (function (document) {
     'use strict';
 

@@ -1,3 +1,4 @@
+/* Progress Bar countdown function for 1 min */
 
 ProgressCountdown(60, 'pageBeginCountdown')
 

@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
 
-# Tutorials: 
-# API with flask - https://programminghistorian.org/en/lessons/creating-apis-with-python-and-flask
-# RESTful API with flask - https://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
-# Flask tutorial - https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
-# Insert data to sqlite db - https://www.sqlitetutorial.net/sqlite-python/insert/
-# HTML table filter example - https://morioh.com/p/51dbc30377fc
-# Flask render JINJA template - https://hackersandslackers.com/flask-jinja-templates/
+"""
+This application is RESTful API for monitoring servers storage devices.
+Aplication is made using Flask. Apart from API this aplication renders HTML table with all records in the internal
+SQLite DB file using API calls.
+For more information how to use API check this project Github page.
+
+
+Copyright (C) 2021 Martynas J. 
+f5AFfMhv@protonmail.com  
+https://github.com/f5AFfMhv
+
+Tutorials: 
+    API with flask - https://programminghistorian.org/en/lessons/creating-apis-with-python-and-flask
+    RESTful API with flask - https://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
+    Flask tutorial - https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
+    Insert data to sqlite db - https://www.sqlitetutorial.net/sqlite-python/insert/
+    Flask render JINJA template - https://hackersandslackers.com/flask-jinja-templates/
+"""
 
 from flask import Flask, jsonify, request, make_response, send_file, redirect, render_template
 from datetime import datetime
@@ -73,10 +84,11 @@ def home():
     for device_state in STATE_ORDER:
         # Make API call to get results for every state individualy
         request = requests.get(BASE_URL + '?state=' + device_state)
-        # Is there is any device with state we are checking?
+        # Is there any device with state we are checking?
         if request.status_code != 404:
             # Collect information for table row render
             data = request.json()
+            # Combine all information into one list of rows
             row.extend(data)
     return render_template('index.html', row=row)
 
@@ -106,7 +118,7 @@ def download(agent):
         return page_not_found(404)
     return send_file(path, as_attachment=True)
 
-# Return file
+# Return various files for HTML page rendering
 @app.route('/<file>')
 def file_return(file):
     if file == "favicon.ico":
@@ -123,16 +135,20 @@ def file_return(file):
         return page_not_found(404)    
     return send_file(path, as_attachment=True)
 
-# Generate CSV
+# Generate CSV from all records in database
 @app.route('/export')
 def export_table():
+    # Request all records from API
     request = requests.get(BASE_URL + '/all').json()
+    # Generate CSV using pandas module
     export = pd.read_json(json.dumps(request))
     export.to_csv("SD_table.csv", index=False, columns=['id', 'name', 'ip', 'device', 'state', 'size_gb', 'free_gb', 'used_perc', 'updated'])
     return send_file("SD_table.csv", as_attachment=True)
 
 
-# API OBTAIN INFORMATION
+# Code below implements RESTful API functionality
+#                                                               OBTAIN INFORMATION
+#
 # Get all records from DB in JSON
 @app.route(API + '/all', methods=['GET'])
 def get_all_records():
@@ -178,7 +194,8 @@ def get_record():
     else:
         return jsonify(results)
 
-# API CREATE NEW RESOURCE
+#                                                               CREATE NEW RESOURCE
+#
 # Create new server record. Record ID is incremented automaticaly by DB, so no need to pass record id
 @app.route(API, methods=['POST'])
 def create_record():
@@ -187,7 +204,7 @@ def create_record():
     # If value is missing NULL will be assigned
     if not request.json or not 'name' in request.json:
         return bad_request(400)
-    # Check if request passed valid values for record
+    # Sanity check for request values
     if type(request.json.get('state')) != str or request.json.get('state') == None:
         return bad_request(400, 'state value incorect or missing')
     if type(request.json.get('size_gb')) != int or request.json.get('size_gb') == None:
@@ -212,7 +229,8 @@ def create_record():
     latest_server = db_read(DB_FILE, sql)
     return jsonify({'server': latest_server}), 201
 
-# API UPDATE EXISTING RESOURCE
+#                                                           UPDATE EXISTING RESOURCE
+#
 # Update existing record by id with new values (can't change server name or device)
 @app.route(API, methods=['PUT'])
 def update_record():
@@ -224,7 +242,7 @@ def update_record():
     r = requests.get(BASE_URL + '?id=' + str(id))
     if (r.status_code == 404):
         return page_not_found(404)
-    # Check if request passed valid new values for record
+    # Sanity check for request values
     if type(request.json.get('state')) != str or request.json.get('state') == None:
         return bad_request(400, 'state value incorect or missing')
     if type(request.json.get('size_gb')) != int or request.json.get('size_gb') == None:
@@ -254,7 +272,8 @@ def update_record():
     r = requests.get(BASE_URL + '?id=' + str(id))
     return jsonify({'server': r.json()})
 
-# API DELETE RECORD
+#                                                               DELETE RECORD
+#
 # Delete existing record from DB file
 @app.route(API, methods=['DELETE'])
 def delete_record():
