@@ -9,7 +9,7 @@
 # Main variables
 # "Server Disk Space" server IP or resolvable fqdn
 SERVER="192.168.0.2"
-# List of mounted storage devices to be monitored. Add -x options for file system types you wan to exclude
+# List of mounted storage devices to be monitored. Add -x options for file system types you want to exclude
 DEVICE_LIST=$(df -x squashfs -x tmpfs -x devtmpfs -x overlay --output=target | tail -n +2)
 # Treshold values of free space in GB to determine device state
 ALERT=20 # If device has less free space in GB than this value, device will be assignet alert state
@@ -25,13 +25,13 @@ fi
 
 # For every storage device in list, get information about its size, free space and usage in percentage.
 for DEVICE in $DEVICE_LIST; do
-    SIZE=$(df -BGB $DEVICE | tail -n +2 | awk '{print $2}')
-    FREE=$(df -BGB $DEVICE | tail -n +2 | awk '{print $4}')
+    SIZE=$(df -BG $DEVICE | tail -n +2 | awk '{print $2}')
+    FREE=$(df -BG $DEVICE | tail -n +2 | awk '{print $4}')
     USE=$(df -h $DEVICE | tail -n +2 | awk '{print $5}')
     # From gathered information determine storage device state (alert, warning, normal)
-    if (( ${FREE%??} < $ALERT )); then
+    if (( ${FREE%?} < $ALERT )); then
         STATE=alert
-    elif (( ${FREE%??} < $WARNING )); then
+    elif (( ${FREE%?} < $WARNING )); then
         STATE=warning
     else
         STATE=normal
@@ -40,40 +40,42 @@ for DEVICE in $DEVICE_LIST; do
     # From API request device from hostname and mount point. If device ID not found - create record, else - update values
     echo "http://$SERVER:5000/api/v1/resources/servers?name=$HOSTNAME&device=$DEVICE" > $REQUEST
     # Try to get device ID from request
-    ID=$(curl -s $(cat $REQUEST) | jq '.[].id')
+    ID=$(curl -s $(cat $REQUEST) | jq '.[].id' 2>/dev/null)
     if [[ -z $ID ]]; then
         echo "Device $DEVICE doesnt exist. Creating..."
         # Form API request in JSON format (\" preserves " character in JSON request)
-        # ${var%??} - removes last 2 symbols from variable
+        # ${var%?} - removes last symbol from variable
         echo {\"name\":\"$HOSTNAME\", \
             \"device\":\"$DEVICE\", \
             \"state\":\"$STATE\", \
-            \"size_gb\":${SIZE%??}, \
-            \"free_gb\":${FREE%??}, \
+            \"size_gb\":${SIZE%?}, \
+            \"free_gb\":${FREE%?}, \
             \"used_perc\":${USE%?}} > $REQUEST
 
         # Make API POST call
-        curl \
+        curl -s \
             --header "Content-type: application/json" \
             --request POST \
             --data @$REQUEST \
-            http://$SERVER:5000/api/v1/resources/servers
+            http://$SERVER:5000/api/v1/resources/servers \
+            | jq
     else
         echo "Device $DEVICE exists with id: $ID. Updating..."
         # Form API request in JSON format (\" preserves " character in JSON request)
-        # ${var%??} - removes last 2 symbols from variable
+        # ${var%} - removes last symbol from variable
         echo {\"id\":\"$ID\", \
             \"state\":\"$STATE\", \
-            \"size_gb\":${SIZE%??}, \
-            \"free_gb\":${FREE%??}, \
+            \"size_gb\":${SIZE%?}, \
+            \"free_gb\":${FREE%?}, \
             \"used_perc\":${USE%?}} > $REQUEST
 
         # Make API PUT call
-        curl \
+        curl -s \
             --header "Content-type: application/json" \
             --request PUT \
             --data @$REQUEST \
-            http://$SERVER:5000/api/v1/resources/servers
+            http://$SERVER:5000/api/v1/resources/servers \
+            | jq
     fi
 
     # Remove temporary file
