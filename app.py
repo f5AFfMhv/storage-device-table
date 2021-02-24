@@ -200,6 +200,7 @@ def get_record():
 @app.route(API, methods=['POST'])
 def create_record():
 
+    print(request.json)
     # If POST request is valid, form list of arguments from request and add new record to DB file.
     # If value is missing NULL will be assigned
     if not request.json or not 'name' in request.json:
