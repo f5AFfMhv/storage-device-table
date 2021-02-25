@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Script gathers system information about main storage devices,
-# forms JSON file and posts it to "Server Disk Space" API
+# forms JSON file and posts it to SDT API
 
 # DEPENDENCIES
 # jq - Command-line JSON processor
 
 # Main variables
-# "Server Disk Space" server IP or resolvable fqdn
+# Server IP or resolvable fqdn
 SERVER="192.168.0.2"
 # List of mounted storage devices to be monitored. Add -x options for file system types you want to exclude
 DEVICE_LIST=$(df -x squashfs -x tmpfs -x devtmpfs -x overlay --output=target | tail -n +2)
@@ -87,7 +87,7 @@ for DEVICE in $DEVICE_LIST; do
     if [[ $QUIET != true ]]; then
         echo "$DEVICE size: $SIZE, free: $FREE, usage: $USE, state: $STATE"
     fi
-    # From API request device from hostname and mount point. If device ID not found - create record, else - update values
+    # From API request device from hostname and device. If device ID not found - create record, else - update values
     echo "http://$SERVER:5000/api/v1/resources/servers?name=$HOSTNAME&device=$DEVICE" > $REQUEST
     # Try to get device ID from request
     ID=$(curl -s $(cat $REQUEST) | jq '.[].id' 2>/dev/null)

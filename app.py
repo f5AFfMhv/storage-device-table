@@ -113,7 +113,9 @@ def delete(id):
 @app.route('/download/<agent>')
 def download(agent):
     if agent == "linux_agent":
-	    path = "scripts/disk_space.sh"
+	    path = "scripts/SDT-linux-agent.sh"
+    elif agent == "windows_agent":
+    	path = "scripts/SDT-windows-agent.ps1"
     else:
         return page_not_found(404)
     return send_file(path, as_attachment=True)

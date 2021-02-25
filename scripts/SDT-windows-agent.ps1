@@ -1,20 +1,19 @@
 
 # Script gathers system information about main storage devices,
-# forms JSON file and posts it to "Server Disk Space" API
-
-# DEPENDENCIES
-# 
+# forms JSON request and posts it to SDT API
 
 # Main variables
-# "Server Disk Space" server IP or resolvable fqdn
+# Server IP or resolvable fqdn
 $SERVER="192.168.0.2"
+# API url
+$URI = "http://" + $SERVER + ":5000/api/v1/resources/servers"
 # Threshold values of free space in GB to determine device state
-$ALERT=10 # If device has less free space in GB than this value, device will be assignet alert state
+$ALERT=5 # If device has less free space in GB than this value, device will be assignet alert state
 $WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
 # Flag for QUIET mode
-$QUIET=0
-# Value for disk size conversion to GB
-$GB=1073741824
+$QUIET=$false
+# Byte value for disk size conversion to GB
+$GB=1073741824 # 1 GB = 1073741824 B
 # Help message
 $HELP="
     Usage: SDT-windows-agent.ps1 [-h] [-q] [options] [args]\n
@@ -28,7 +27,7 @@ $HELP="
     Example:\n
         \t ./disk_space.sh -s 192.168.100.100 -a 10 -w 20
 "
-Set-ExecutionPolicy Unrestricted -Force
+
 # Determine server name
 $name = (Get-CimInstance -ClassName Win32_ComputerSystem).name
 
@@ -38,39 +37,51 @@ $volumes = (Get-Volume |
     Where-Object {$_.DriveType -ne "CD-ROM"} |
     Where-Object {$_.Size -ne 0})
 
-
+# For every storage device in list, get information about it
 foreach ($volume in $volumes){
-    $device = $Volume.DriveLetter + ": " + $Volume.FileSystemLabel
-    $size = [math]::floor($Volume.Size/$GB)
-    $free = [math]::floor($Volume.SizeRemaining/$GB)
+    $device = $Volume.DriveLetter + ":" + $Volume.FileSystemLabel # Drive letter and label
+    $size = [math]::floor($Volume.Size/$GB) # Rounded drive size in GB
+    $free = [math]::floor($Volume.SizeRemaining/$GB) # Rounded free drive space in GB
+    # From gathered information determine storage device state (alert, warning, normal)
     if ($free -le $ALERT) 
         {$state="alert"} 
     elseif ($free -le $WARNING) 
         {$state="warning"}
     else 
         {$state="normal"}
+
+    # Calculate drive usage in percents
     $used_perc = [math]::floor(($size-$free)*100/$size)
 
-    Write-Host $name
-    Write-Host $device
-    Write-Host $state
-    Write-Host $size
-    Write-Host $free
-    Write-Host $used_perc
-    Write-Host "------------------------------"
-
-    # $URI = "http://" + $SERVER + ":5000/api/v1/resources/servers?name=" + $name + "&device=" + $device
-    # $exists = (Invoke-RestMethod -Uri $URI).status
-
-    $URI = "http://" + $SERVER + ":5000/api/v1/resources/servers"
-    $Body = @{
-        name = $name
-        device = $device
-        state = $state
-        size_gb = $size
-        free_gb = $free
-        used_perc = $used_perc}
-
-    Invoke-RestMethod -Method 'Post' -Uri $URI -Body $Body
+    if (!$QUIET){
+        Write-Host $device "size:" $size ", free:" $free ", usage:" $used_perc ", state:" $state
     }
-#Invoke-WebRequest -Uri "http://192.168.0.2:5000/api/v1/resources/servers/all"
+
+    # From API request device from hostname and drive. If device ID not found - create record, else - update values
+    $REQ_URI = $URI + "?name=" + $name + "&device=" + $device
+    
+    # Try to get response from request
+    try {
+        # If device exists, read ID and update values with put method
+        $response = Invoke-RestMethod -Method 'Get' -Uri $REQ_URI -ContentType 'application/json'
+        $params = @{
+            id = $response.id
+            state = $state
+            size_gb = $size
+            free_gb = $free
+            used_perc = $used_perc
+            }
+            Invoke-RestMethod -Method 'Put' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json"
+    } catch {
+        # If response returns 404, create device with post method
+        $params = @{
+            name = $name
+            device = $device
+            state = $state
+            size_gb = $size
+            free_gb = $free
+            used_perc = $used_perc
+            }
+        Invoke-RestMethod -Method 'Post' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json"
+        }
+    }
