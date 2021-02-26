@@ -84,9 +84,6 @@ for DEVICE in $DEVICE_LIST; do
     else
         STATE=normal
     fi
-    if [[ $QUIET != true ]]; then
-        echo "$DEVICE size: $SIZE, free: $FREE, usage: $USE, state: $STATE"
-    fi
     # From API request device from hostname and device. If device ID not found - create record, else - update values
     echo "http://$SERVER:5000/api/v1/resources/servers?name=$HOSTNAME&device=$DEVICE" > $REQUEST
     # Try to get device ID from request

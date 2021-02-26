@@ -3,15 +3,17 @@
 # forms JSON request and posts it to SDT API
 
 # Main variables
-# Server IP or resolvable fqdn
-$SERVER="192.168.0.2"
+param (
+    # Flag for QUIET mode
+    [bool]$QUIET=$false,
+    # Server IP or resolvable fqdn
+    [string]$SERVER="192.168.0.2",
+    # Threshold values of free space in GB to determine device state
+    [int]$ALERT=5, # If device has less free space in GB than this value, device will be assignet alert state
+    [int]$WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
+)
 # API url
 $URI = "http://" + $SERVER + ":5000/api/v1/resources/servers"
-# Threshold values of free space in GB to determine device state
-$ALERT=5 # If device has less free space in GB than this value, device will be assignet alert state
-$WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
-# Flag for QUIET mode
-$QUIET=$false
 # Byte value for disk size conversion to GB
 $GB=1073741824 # 1 GB = 1073741824 B
 # Help message
@@ -37,7 +39,7 @@ $volumes = (Get-Volume |
     Where-Object {$_.DriveType -ne "CD-ROM"} |
     Where-Object {$_.Size -ne 0})
 
-# For every storage device in list, get information about it
+# Get required information for every volume
 foreach ($volume in $volumes){
     $device = $Volume.DriveLetter + ":" + $Volume.FileSystemLabel # Drive letter and label
     $size = [math]::floor($Volume.Size/$GB) # Rounded drive size in GB
@@ -53,17 +55,14 @@ foreach ($volume in $volumes){
     # Calculate drive usage in percents
     $used_perc = [math]::floor(($size-$free)*100/$size)
 
-    if (!$QUIET){
-        Write-Host $device "size:" $size ", free:" $free ", usage:" $used_perc ", state:" $state
-    }
-
-    # From API request device from hostname and drive. If device ID not found - create record, else - update values
+    # Form API request from hostname and drive name. If device ID not found - create record, else - update values
     $REQ_URI = $URI + "?name=" + $name + "&device=" + $device
     
     # Try to get response from request
     try {
         # If device exists, read ID and update values with put method
         $response = Invoke-RestMethod -Method 'Get' -Uri $REQ_URI -ContentType 'application/json'
+        
         $params = @{
             id = $response.id
             state = $state
@@ -71,9 +70,18 @@ foreach ($volume in $volumes){
             free_gb = $free
             used_perc = $used_perc
             }
-            Invoke-RestMethod -Method 'Put' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json"
+
+        if (!$QUIET){
+            Write-Host "Device" $device "exists with id:" $response.id "Updating..."
+            # Put new data for existing device
+            Invoke-RestMethod -Method 'Put' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" | ConvertTo-Json
+        }
+        else{
+            # Put new data for existing device
+            Invoke-RestMethod -Method 'Put' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" >$null 2>&1
+        }       
     } catch {
-        # If response returns 404, create device with post method
+        # If response returns 404 (device doesnt exist), create device with post method
         $params = @{
             name = $name
             device = $device
@@ -82,6 +90,15 @@ foreach ($volume in $volumes){
             free_gb = $free
             used_perc = $used_perc
             }
-        Invoke-RestMethod -Method 'Post' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json"
+
+        if (!$QUIET){
+            Write-Host "Device" $device "doesnt exist. Creating..."
+            # Post new device data
+            Invoke-RestMethod -Method 'Post' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" >$null 2>&1
+        }
+        else {
+            # Post new device data    
+            Invoke-RestMethod -Method 'Post' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" | ConvertTo-Json
+        }
         }
     }
