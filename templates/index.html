@@ -24,7 +24,7 @@
       </tr>
       <tr>
         <th>ID</th>
-        <th>Name</th>
+        <th>Host</th>
         <th>IP</th>
         <th>Device</th>
         <th>Disk State</th>
@@ -50,13 +50,13 @@
         <tr style="background:red;">
       {% endif %}
         <td>{{ i.id }}</td>
-        <td><a href="graph/{{ i.name }}" target="_blank">{{ i.name }}</a></td>
+        <td><a href="graph/{{ i.host }}" target="_blank">{{ i.host }}</a></td>
         <td>{{ i.ip }}</td>
         <td>{{ i.device }}</td>
         <td>{{ i.state }}</td>
-        <td>{{ i.size_gb }}</td>
-        <td>{{ i.free_gb }}</td>
-        <td>{{ i.used_perc}}</td>
+        <td>{{ (i.size_mb / 1024)|round(1, 'floor') }}</td>
+        <td>{{ (i.free_mb / 1024)|round(1, 'floor') }}</td>
+        <td>{{ i.used_perc}}% <progress style="width:40px;" value="{{ i.used_perc}}" max="100"></progress></td>
         <td>{{ i.updated }}</td>
         <td><a href="remove/{{ i.id }}"><img alt="DEL" src="delete.png" width=20 height=20></a></td>
       </tr>

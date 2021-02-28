@@ -31,23 +31,23 @@ class figure:
 
     def create_graph(self):
         # Get data from API
-        self.r = requests.get(self.url + '?name=' + self.dev)
+        self.r = requests.get(self.url + '?host=' + self.dev)
         self.server = self.r.json()
         # Parse data to list for ploting
         for self.d in self.server:
             self.devices.append(self.d.get('device'))
-            self.free.append(self.d.get('free_gb'))
-            self.used.append(self.d.get('size_gb') - self.d.get('free_gb'))
+            self.free.append(self.d.get('free_mb'))
+            self.used.append(self.d.get('size_mb') - self.d.get('free_mb'))
 
         # Add data to graph.
-        self.fig.add_trace(go.Bar(x=self.devices, y=self.used, name='Used space, GB'))
-        self.fig.add_trace(go.Bar(x=self.devices, y=self.free, name='Free space, GB'))
+        self.fig.add_trace(go.Bar(x=self.devices, y=self.used, name='Used space, MB'))
+        self.fig.add_trace(go.Bar(x=self.devices, y=self.free, name='Free space, MB'))
 
         # Format chart representation
         self.fig.update_layout(overwrite=True, title=self.dev + " storage devices usage", title_font_color="red", title_font_size=30)
         self.fig.update_layout(hovermode="x")
         self.fig.update_layout(barmode='stack')
         self.fig.update_xaxes(categoryorder='total ascending')
-        self.fig.update_yaxes(title_text='GB')
+        self.fig.update_yaxes(title_text='MB')
 
         return self.fig

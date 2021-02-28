@@ -6,7 +6,7 @@ COPY img /app/img/
 COPY scripts /app/scripts/
 COPY app.py /app
 COPY graphs.py /app
-COPY clean.db /app/servers.db
+COPY clean.db /app/DB.db
 # RUN pip3 install --trusted-host pypi.python.org Flask
 # RUN pip3 install --trusted-host pypi.python.org requests
 # RUN pip3 install --trusted-host pypi.python.org plotly

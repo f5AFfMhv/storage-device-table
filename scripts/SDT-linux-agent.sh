@@ -73,8 +73,8 @@ fi
 
 # For every storage device in list, get information about its size, free space and usage in percentage.
 for DEVICE in $DEVICE_LIST; do
-    SIZE=$(df -BG $DEVICE | tail -n +2 | awk '{print $2}')
-    FREE=$(df -BG $DEVICE | tail -n +2 | awk '{print $4}')
+    SIZE=$(df -BM $DEVICE | tail -n +2 | awk '{print $2}')
+    FREE=$(df -BM $DEVICE | tail -n +2 | awk '{print $4}')
     USE=$(df -h $DEVICE | tail -n +2 | awk '{print $5}')
     # From gathered information determine storage device state (alert, warning, normal)
     if (( ${FREE%?} < $ALERT )); then
@@ -84,8 +84,8 @@ for DEVICE in $DEVICE_LIST; do
     else
         STATE=normal
     fi
-    # From API request device from hostname and device. If device ID not found - create record, else - update values
-    echo "http://$SERVER:5000/api/v1/resources/servers?name=$HOSTNAME&device=$DEVICE" > $REQUEST
+    # Make API request for hostname and device. If device ID not found - create record, else - update values
+    echo "http://$SERVER:5000/api/v1/resources/devices?host=$HOSTNAME&device=$DEVICE" > $REQUEST
     # Try to get device ID from request
     ID=$(curl -s $(cat $REQUEST) | jq '.[].id' 2>/dev/null)
     if [[ -z $ID ]]; then
@@ -94,11 +94,11 @@ for DEVICE in $DEVICE_LIST; do
         fi
         # Form API request in JSON format (\" preserves " character in JSON request)
         # ${var%?} - removes last symbol from variable
-        echo {\"name\":\"$HOSTNAME\", \
+        echo {\"host\":\"$HOSTNAME\", \
             \"device\":\"$DEVICE\", \
             \"state\":\"$STATE\", \
-            \"size_gb\":${SIZE%?}, \
-            \"free_gb\":${FREE%?}, \
+            \"size_mb\":${SIZE%?}, \
+            \"free_mb\":${FREE%?}, \
             \"used_perc\":${USE%?}} > $REQUEST
 
         # Make API POST call
@@ -107,14 +107,14 @@ for DEVICE in $DEVICE_LIST; do
                 --header "Content-type: application/json" \
                 --request POST \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/resources/servers \
+                http://$SERVER:5000/api/v1/resources/devices \
                 > /dev/null
         else
             curl -s \
                 --header "Content-type: application/json" \
                 --request POST \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/resources/servers \
+                http://$SERVER:5000/api/v1/resources/devices \
                 | jq
         fi
     else
@@ -125,8 +125,8 @@ for DEVICE in $DEVICE_LIST; do
         # ${var%} - removes last symbol from variable
         echo {\"id\":\"$ID\", \
             \"state\":\"$STATE\", \
-            \"size_gb\":${SIZE%?}, \
-            \"free_gb\":${FREE%?}, \
+            \"size_mb\":${SIZE%?}, \
+            \"free_mb\":${FREE%?}, \
             \"used_perc\":${USE%?}} > $REQUEST
 
         # Make API PUT call
@@ -135,14 +135,14 @@ for DEVICE in $DEVICE_LIST; do
                 --header "Content-type: application/json" \
                 --request PUT \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/resources/servers \
+                http://$SERVER:5000/api/v1/resources/devices \
                 > /dev/null
         else
             curl -s \
                 --header "Content-type: application/json" \
                 --request PUT \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/resources/servers \
+                http://$SERVER:5000/api/v1/resources/devices \
                 | jq
         fi
     fi

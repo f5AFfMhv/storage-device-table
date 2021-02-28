@@ -3,19 +3,26 @@
 # forms JSON request and posts it to SDT API
 
 # Main variables
-param (
-    # Flag for QUIET mode
-    [bool]$QUIET=$false,
-    # Server IP or resolvable fqdn
-    [string]$SERVER="192.168.0.2",
-    # Threshold values of free space in GB to determine device state
-    [int]$ALERT=5, # If device has less free space in GB than this value, device will be assignet alert state
-    [int]$WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
-)
+# param (
+#     # Flag for QUIET mode
+#     [bool]$QUIET=$false,
+#     # Server IP or resolvable fqdn
+#     [string]$SERVER="192.168.0.2",
+#     # Threshold values of free space in GB to determine device state
+#     [int]$ALERT=5, # If device has less free space in GB than this value, device will be assignet alert state
+#     [int]$WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
+# )
+$QUIET=$false
+# Server IP or resolvable fqdn
+$SERVER="192.168.0.2"
+# Threshold values of free space in GB to determine device state
+$ALERT=5 # If device has less free space in GB than this value, device will be assignet alert state
+$WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
 # API url
-$URI = "http://" + $SERVER + ":5000/api/v1/resources/servers"
+$URI = "http://" + $SERVER + ":5000/api/v1/resources/devices"
 # Byte value for disk size conversion to GB
 $GB=1073741824 # 1 GB = 1073741824 B
+$MB=1048576 # 1 MB = 1048576 B
 # Help message
 $HELP="
     Usage: SDT-windows-agent.ps1 [-h] [-q] [options] [args]\n
@@ -31,7 +38,7 @@ $HELP="
 "
 
 # Determine server name
-$name = (Get-CimInstance -ClassName Win32_ComputerSystem).name
+$hostname = (Get-CimInstance -ClassName Win32_ComputerSystem).name
 
 # Get information on system logical volumes which are not CD-ROM, without drive letter or with size attribute equal to 0
 $volumes = (Get-Volume |
@@ -42,8 +49,8 @@ $volumes = (Get-Volume |
 # Get required information for every volume
 foreach ($volume in $volumes){
     $device = $Volume.DriveLetter + ":" + $Volume.FileSystemLabel # Drive letter and label
-    $size = [math]::floor($Volume.Size/$GB) # Rounded drive size in GB
-    $free = [math]::floor($Volume.SizeRemaining/$GB) # Rounded free drive space in GB
+    $size = [math]::floor($Volume.Size/$MB) # Rounded drive size in MB
+    $free = [math]::floor($Volume.SizeRemaining/$MB) # Rounded free drive space in MB
     # From gathered information determine storage device state (alert, warning, normal)
     if ($free -le $ALERT) 
         {$state="alert"} 
@@ -56,7 +63,7 @@ foreach ($volume in $volumes){
     $used_perc = [math]::floor(($size-$free)*100/$size)
 
     # Form API request from hostname and drive name. If device ID not found - create record, else - update values
-    $REQ_URI = $URI + "?name=" + $name + "&device=" + $device
+    $REQ_URI = $URI + "?host=" + $hostname + "&device=" + $device
     
     # Try to get response from request
     try {
@@ -66,8 +73,8 @@ foreach ($volume in $volumes){
         $params = @{
             id = $response.id
             state = $state
-            size_gb = $size
-            free_gb = $free
+            size_mb = $size
+            free_mb = $free
             used_perc = $used_perc
             }
 
@@ -83,11 +90,11 @@ foreach ($volume in $volumes){
     } catch {
         # If response returns 404 (device doesnt exist), create device with post method
         $params = @{
-            name = $name
+            host = $hostname
             device = $device
             state = $state
-            size_gb = $size
-            free_gb = $free
+            size_mb = $size
+            free_mb = $free
             used_perc = $used_perc
             }
 

@@ -30,9 +30,9 @@ import pandas as pd
 
 # Variables
 BASE = 'http://localhost:5000'
-API = '/api/v1/resources/servers' # API uri
+API = '/api/v1/resources/devices' # API uri
 BASE_URL = BASE + API
-DB_FILE = 'servers.db'
+DB_FILE = 'DB.db'
 IFRAME_GRAPH = 'iframe_figures/figure_0.html'
 STATE_ORDER= ["alert", "warning", "normal"]
 
@@ -144,7 +144,7 @@ def export_table():
     request = requests.get(BASE_URL + '/all').json()
     # Generate CSV using pandas module
     export = pd.read_json(json.dumps(request))
-    export.to_csv("SD_table.csv", index=False, columns=['id', 'name', 'ip', 'device', 'state', 'size_gb', 'free_gb', 'used_perc', 'updated'])
+    export.to_csv("SD_table.csv", index=False, columns=['id', 'host', 'ip', 'device', 'state', 'size_mb', 'free_mb', 'used_perc', 'updated'])
     return send_file("SD_table.csv", as_attachment=True)
 
 
@@ -154,9 +154,9 @@ def export_table():
 # Get all records from DB in JSON
 @app.route(API + '/all', methods=['GET'])
 def get_all_records():
-    sql = ''' SELECT * FROM servers '''
-    all_servers = db_read(DB_FILE, sql)
-    return jsonify(all_servers)
+    sql = ''' SELECT * FROM devices '''
+    all_devices = db_read(DB_FILE, sql)
+    return jsonify(all_devices)
 
 # Get specific records from DB
 @app.route(API, methods=['GET'])
@@ -164,11 +164,11 @@ def get_record():
     # Filter API requests by record ID, hostname, state or device
     id = request.args.get('id')
     state = request.args.get('state')
-    name = request.args.get('name')
+    host = request.args.get('host')
     device = request.args.get('device')
 
     # Build SQL query from given requests
-    sql = "SELECT * FROM servers WHERE"
+    sql = "SELECT * FROM devices WHERE"
     to_filter = []
 
     if id:
@@ -177,13 +177,13 @@ def get_record():
     if state:
         sql += ' state=? AND'
         to_filter.append(state)
-    if name:
-        sql += ' name=? AND'
-        to_filter.append(name)
+    if host:
+        sql += ' host=? AND'
+        to_filter.append(host)
     if device:
         sql += ' device=? AND'
         to_filter.append(device)
-    if not (id or state or name or device):
+    if not (id or state or host or device):
         return page_not_found(404)
 
     # Remove trailing 'AND' from sql query
@@ -205,30 +205,30 @@ def create_record():
     print(request.json)
     # If POST request is valid, form list of arguments from request and add new record to DB file.
     # If value is missing NULL will be assigned
-    if not request.json or not 'name' in request.json:
+    if not request.json or not 'host' in request.json:
         return bad_request(400)
     # Sanity check for request values
     if type(request.json.get('state')) != str or request.json.get('state') == None:
         return bad_request(400, 'state value incorect or missing')
-    if type(request.json.get('size_gb')) != int or request.json.get('size_gb') == None:
-        return bad_request(400, 'size_gb value incorect or missing')
-    if type(request.json.get('free_gb')) != int or request.json.get('free_gb') == None:
-        return bad_request(400, 'free_gb value incorect or missing')
+    if type(request.json.get('size_mb')) != int or request.json.get('size_mb') == None:
+        return bad_request(400, 'size_mb value incorect or missing')
+    if type(request.json.get('free_mb')) != int or request.json.get('free_mb') == None:
+        return bad_request(400, 'free_mb value incorect or missing')
     if type(request.json.get('used_perc')) != int or request.json.get('used_perc') == None:
         return bad_request(400, 'used_perc value incorect or missing')
 
-    server_list = (request.json.get('name'), request.json.get('device'), request.json.get('state'), 
-                    request.json.get('size_gb'), request.json.get('free_gb'), request.json.get('used_perc'), 
+    server_list = (request.json.get('host'), request.json.get('device'), request.json.get('state'), 
+                    request.json.get('size_mb'), request.json.get('free_mb'), request.json.get('used_perc'), 
                     request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     # SQL query
-    sql = ''' INSERT INTO servers(name,device,state,size_gb,free_gb,used_perc,ip,updated)
+    sql = ''' INSERT INTO devices(host,device,state,size_mb,free_mb,used_perc,ip,updated)
               VALUES(?,?,?,?,?,?,?,?) '''
 
     # Execute SQL query
     db_mod(DB_FILE, sql, server_list)
 
     # Get latest record from DB
-    sql = ''' SELECT * FROM servers WHERE id=(SELECT MAX(id) FROM servers); '''
+    sql = ''' SELECT * FROM devices WHERE id=(SELECT MAX(id) FROM devices); '''
     latest_server = db_read(DB_FILE, sql)
     return jsonify({'server': latest_server}), 201
 
@@ -248,22 +248,22 @@ def update_record():
     # Sanity check for request values
     if type(request.json.get('state')) != str or request.json.get('state') == None:
         return bad_request(400, 'state value incorect or missing')
-    if type(request.json.get('size_gb')) != int or request.json.get('size_gb') == None:
-        return bad_request(400, 'size_gb value incorect or missing')
-    if type(request.json.get('free_gb')) != int or request.json.get('free_gb') == None:
-        return bad_request(400, 'free_gb value incorect or missing')
+    if type(request.json.get('size_mb')) != int or request.json.get('size_mb') == None:
+        return bad_request(400, 'size_mb value incorect or missing')
+    if type(request.json.get('free_mb')) != int or request.json.get('free_mb') == None:
+        return bad_request(400, 'free_mb value incorect or missing')
     if type(request.json.get('used_perc')) != int or request.json.get('used_perc') == None:
         return bad_request(400, 'used_perc value incorect or missing')
 
     # Form list of new values from request (no NULL values should be added, because of previous check)
-    server_list = (request.json.get('state'), request.json.get('size_gb'), request.json.get('free_gb'),
+    server_list = (request.json.get('state'), request.json.get('size_mb'), request.json.get('free_mb'),
         request.json.get('used_perc'), request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), request.json.get('id'))
    
     # Build SQL query
-    sql = ''' UPDATE servers
+    sql = ''' UPDATE devices
               SET state = ? ,
-                  size_gb = ? ,
-                  free_gb = ? ,
+                  size_mb = ? ,
+                  free_mb = ? ,
                   used_perc = ?,
                   ip = ?,
                   updated = ?
@@ -287,7 +287,7 @@ def delete_record():
         return page_not_found(404)
     
     # Form SQL query
-    sql = ''' DELETE FROM servers WHERE id=? '''
+    sql = ''' DELETE FROM devices WHERE id=? '''
     # Execute SQL query
     db_mod(DB_FILE, sql, (id,))
     return jsonify({'result': True}), 200
