@@ -85,7 +85,7 @@ for DEVICE in $DEVICE_LIST; do
         STATE=normal
     fi
     # Make API request for hostname and device. If device ID not found - create record, else - update values
-    echo "http://$SERVER:5000/api/v1/resources/devices?host=$HOSTNAME&device=$DEVICE" > $REQUEST
+    echo "http://$SERVER:5000/api/v1/devices?host=$HOSTNAME&device=$DEVICE" > $REQUEST
     # Try to get device ID from request
     ID=$(curl -s $(cat $REQUEST) | jq '.[].id' 2>/dev/null)
     if [[ -z $ID ]]; then
@@ -107,14 +107,14 @@ for DEVICE in $DEVICE_LIST; do
                 --header "Content-type: application/json" \
                 --request POST \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/resources/devices \
+                http://$SERVER:5000/api/v1/devices \
                 > /dev/null
         else
             curl -s \
                 --header "Content-type: application/json" \
                 --request POST \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/resources/devices \
+                http://$SERVER:5000/api/v1/devices \
                 | jq
         fi
     else
@@ -135,14 +135,14 @@ for DEVICE in $DEVICE_LIST; do
                 --header "Content-type: application/json" \
                 --request PUT \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/resources/devices \
+                http://$SERVER:5000/api/v1/devices \
                 > /dev/null
         else
             curl -s \
                 --header "Content-type: application/json" \
                 --request PUT \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/resources/devices \
+                http://$SERVER:5000/api/v1/devices \
                 | jq
         fi
     fi

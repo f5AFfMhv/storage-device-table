@@ -30,7 +30,7 @@ import pandas as pd
 
 # Variables
 BASE = 'http://localhost:5000'
-API = '/api/v1/resources/devices' # API uri
+API = '/api/v1/devices' # API uri
 BASE_URL = BASE + API
 DB_FILE = 'DB.db'
 IFRAME_GRAPH = 'iframe_figures/figure_0.html'
@@ -90,7 +90,7 @@ def home():
             data = request.json()
             # Combine all information into one list of rows
             row.extend(data)
-    return render_template('index.html', row=row)
+    return render_template('table.html', row=row)
 
 # Return host storage bar graph when clicked on hostname
 @app.route('/graph/<name>', methods=['GET'])
@@ -133,6 +133,8 @@ def file_return(file):
         path = "templates/filter.js"
     elif file == "refresh_bar.js":
         path = "templates/refresh_bar.js"
+    elif file == "sort.js":
+        path = "templates/sort.js"
     else:
         return page_not_found(404)    
     return send_file(path, as_attachment=True)

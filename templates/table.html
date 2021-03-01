@@ -8,10 +8,11 @@
 </head>
 
 <script src="filter.js"></script>
+<script src="sort.js"></script>
 <script src="refresh_bar.js"></script>
 
 <body>
-  <table class="table-info table">
+  <table id="indextable" class="table-info table">
     <thead>
       <tr>
         <td colspan=100%>
@@ -23,15 +24,15 @@
         </td>
       </tr>
       <tr>
-        <th>ID</th>
-        <th>Host</th>
-        <th>IP</th>
-        <th>Device</th>
-        <th>Disk State</th>
-        <th>Size GB</th>
-        <th>Free GB</th>
-        <th>Usage %</th>
-        <th>Last Update</th>
+        <th><a href="javascript:SortTable(0,'N');">ID</a></th>
+        <th><a href="javascript:SortTable(0,'T');">Host</a></th>
+        <th><a href="javascript:SortTable(0,'T');">IP</a></th>
+        <th><a href="javascript:SortTable(0,'T');">Device</a></th>
+        <th><a href="javascript:SortTable(0,'T');">Disk State</a></th>
+        <th><a href="javascript:SortTable(0,'T');">Size</a></th>
+        <th><a href="javascript:SortTable(0,'T');">Free</a></th>
+        <th><a href="javascript:SortTable(0,'T');">Usage %</a></th>
+        <th><a href="javascript:SortTable(0,'D');">Last Update</a></th>
         <th></th>
       </tr>
       <tr>
@@ -54,9 +55,33 @@
         <td>{{ i.ip }}</td>
         <td>{{ i.device }}</td>
         <td>{{ i.state }}</td>
-        <td>{{ (i.size_mb / 1024)|round(1, 'floor') }}</td>
-        <td>{{ (i.free_mb / 1024)|round(1, 'floor') }}</td>
-        <td>{{ i.used_perc}}% <progress style="width:40px;" value="{{ i.used_perc}}" max="100"></progress></td>
+        <td align="right">
+          {% if i.size_mb >= 104857600 %}
+            {{ (i.size_mb / 1048576)|round|int }} TB
+          {% elif i.size_mb >= 1048576 %}
+            {{ (i.size_mb / 1048576)|round(1) }} TB
+          {% elif i.size_mb >= 102400 %}
+            {{ (i.size_mb / 1024)|round|int }} GB
+          {% elif i.size_mb >= 1024 %}
+            {{ (i.size_mb / 1024)|round(1) }} GB
+          {% else %}
+            {{ i.size_mb }} MB
+          {% endif %}
+        </td>
+        <td align="right">
+          {% if i.free_mb >= 104857600 %}
+            {{ (i.free_mb / 1048576)|round|int }} TB
+          {% elif i.free_mb >= 1048576 %}
+            {{ (i.free_mb / 1048576)|round(1) }} TB
+          {% elif i.free_mb >= 102400 %}
+            {{ (i.free_mb / 1024)|round|int }} GB
+          {% elif i.free_mb >= 1024 %}
+            {{ (i.free_mb / 1024)|round(1) }} GB
+          {% else %}
+            {{ i.free_mb }} MB
+          {% endif %}
+        </td>
+        <td align="right">{{ i.used_perc }}% <progress style="width:40px;" value="{{ i.used_perc }}" max="100"></progress></td>
         <td>{{ i.updated }}</td>
         <td><a href="remove/{{ i.id }}"><img alt="DEL" src="delete.png" width=20 height=20></a></td>
       </tr>

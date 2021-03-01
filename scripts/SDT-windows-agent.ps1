@@ -19,9 +19,8 @@ $SERVER="192.168.0.2"
 $ALERT=5 # If device has less free space in GB than this value, device will be assignet alert state
 $WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
 # API url
-$URI = "http://" + $SERVER + ":5000/api/v1/resources/devices"
-# Byte value for disk size conversion to GB
-$GB=1073741824 # 1 GB = 1073741824 B
+$URI = "http://" + $SERVER + ":5000/api/v1/devices"
+# Byte value for disk size conversion to MB
 $MB=1048576 # 1 MB = 1048576 B
 # Help message
 $HELP="
