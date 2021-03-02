@@ -26,12 +26,12 @@ HELP="
     This is linux agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv\n
     Available options:\n
         \t -h   \tPrint this help and exit\n
-        \t -q   \tDon't output anything\n
+        \t -q   \tQuiet stdout\n
         \t -s   \tServer IP/FQDN\n
-        \t -a   \tThreshold value in GB for device status ALERT\n
-        \t -w   \tThreshold value in GB for device status WARNING\n
+        \t -a   \tThreshold free space in GB for device status ALERT\n
+        \t -w   \tThreshold free space in GB for device status WARNING\n
     Example:\n
-        \t ./disk_space.sh -s 192.168.100.100 -a 10 -w 20
+        \t ./$(basename "${BASH_SOURCE[0]}") -q -s 192.168.100.100 -a 10 -w 20
 "
 
 # Parse input arguments
@@ -71,6 +71,9 @@ if ! [[ $WARNING =~ $INTEGERS_RE ]] ; then
     exit 1
 fi
 
+# Convert threshold values from GB to MB
+ALERT=$(( ALERT * 1024 ))
+WARNING=$(( WARNING * 1024 ))
 # For every storage device in list, get information about its size, free space and usage in percentage.
 for DEVICE in $DEVICE_LIST; do
     SIZE=$(df -BM $DEVICE | tail -n +2 | awk '{print $2}')

@@ -36,18 +36,18 @@ class figure:
         # Parse data to list for ploting
         for self.d in self.server:
             self.devices.append(self.d.get('device'))
-            self.free.append(self.d.get('free_mb'))
-            self.used.append(self.d.get('size_mb') - self.d.get('free_mb'))
+            self.free.append(round((self.d.get('free_mb')/1024),2))
+            self.used.append(round((self.d.get('size_mb')/1024 - self.d.get('free_mb')/1024),2))
 
         # Add data to graph.
-        self.fig.add_trace(go.Bar(x=self.devices, y=self.used, name='Used space, MB'))
-        self.fig.add_trace(go.Bar(x=self.devices, y=self.free, name='Free space, MB'))
+        self.fig.add_trace(go.Bar(x=self.devices, y=self.used, name='Used space, GB'))
+        self.fig.add_trace(go.Bar(x=self.devices, y=self.free, name='Free space, GB'))
 
         # Format chart representation
         self.fig.update_layout(overwrite=True, title=self.dev + " storage devices usage", title_font_color="red", title_font_size=30)
         self.fig.update_layout(hovermode="x")
         self.fig.update_layout(barmode='stack')
         self.fig.update_xaxes(categoryorder='total ascending')
-        self.fig.update_yaxes(title_text='MB')
+        self.fig.update_yaxes(title_text='GB')
 
         return self.fig

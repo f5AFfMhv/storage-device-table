@@ -17,7 +17,7 @@ $QUIET=$false
 $SERVER="192.168.0.2"
 # Threshold values of free space in GB to determine device state
 $ALERT=5 # If device has less free space in GB than this value, device will be assignet alert state
-$WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
+$WARNING=50 # If device has less free space in GB than this value, device will be assignet warning state
 # API url
 $URI = "http://" + $SERVER + ":5000/api/v1/devices"
 # Byte value for disk size conversion to MB
@@ -28,16 +28,20 @@ $HELP="
     This is linux agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv\n
     Available options:\n
         \t -h   \tPrint this help and exit\n
-        \t -q   \tDon't output anything\n
+        \t -q   \tQuiet stdout\n
         \t -s   \tServer IP/FQDN\n
-        \t -a   \tThreshold value in GB for device status ALERT\n
-        \t -w   \tThreshold value in GB for device status WARNING\n
+        \t -a   \tThreshold free space in GB for device status ALERT\n
+        \t -w   \tThreshold free space in GB for device status WARNING\n
     Example:\n
-        \t ./disk_space.sh -s 192.168.100.100 -a 10 -w 20
+        \t ./SDT-windows-agent.ps1 -s 192.168.100.100 -a 10 -w 20
 "
 
 # Determine server name
 $hostname = (Get-CimInstance -ClassName Win32_ComputerSystem).name
+
+# Convert threshold values from GB to MB
+$ALERT=$ALERT * 1024
+$WARNING=$WARNING * 1024
 
 # Get information on system logical volumes which are not CD-ROM, without drive letter or with size attribute equal to 0
 $volumes = (Get-Volume |
