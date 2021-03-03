@@ -18,6 +18,10 @@ WARNING=25 # If device has less free space in GB than this value, device will be
 REQUEST="/tmp/request"
 # Flag for QUIET mode
 QUIET=false
+# Server timeout in seconds
+TIMEOUT=5
+# API url
+URI="http://$SERVER:5000/api/v1/devices"
 # Regular expression for matching integers
 INTEGERS_RE='^[0-9]+$'
 # Help message
@@ -56,7 +60,7 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 # Check if server is available
-if [[ -z $(curl --connect-timeout 5 -Is http://$SERVER:5000) ]]; then
+if [[ -z $(curl --connect-timeout $TIMEOUT -Is http://$SERVER:5000) ]]; then
     echo "Server $SERVER unavailable"
     exit 1
 fi
@@ -88,7 +92,7 @@ for DEVICE in $DEVICE_LIST; do
         STATE=normal
     fi
     # Make API request for hostname and device. If device ID not found - create record, else - update values
-    echo "http://$SERVER:5000/api/v1/devices?host=$HOSTNAME&device=$DEVICE" > $REQUEST
+    echo "$URI?host=$HOSTNAME&device=$DEVICE" > $REQUEST
     # Try to get device ID from request
     ID=$(curl -s $(cat $REQUEST) | jq '.[].id' 2>/dev/null)
     if [[ -z $ID ]]; then
@@ -110,14 +114,14 @@ for DEVICE in $DEVICE_LIST; do
                 --header "Content-type: application/json" \
                 --request POST \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/devices \
+                $URI \
                 > /dev/null
         else
             curl -s \
                 --header "Content-type: application/json" \
                 --request POST \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/devices \
+                $URI \
                 | jq
         fi
     else
@@ -138,14 +142,14 @@ for DEVICE in $DEVICE_LIST; do
                 --header "Content-type: application/json" \
                 --request PUT \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/devices \
+                $URI \
                 > /dev/null
         else
             curl -s \
                 --header "Content-type: application/json" \
                 --request PUT \
                 --data @$REQUEST \
-                http://$SERVER:5000/api/v1/devices \
+                $URI \
                 | jq
         fi
     fi

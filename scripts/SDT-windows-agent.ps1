@@ -1,47 +1,44 @@
+<#
+.SYNOPSIS
+.DESCRIPTION
+    This is linux agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv
+.EXAMPLE
+    C:\PS> .\SDT-windows-agent.ps1 -s 192.168.100.100 -a 10 -w 20  
+    Post drive information to server 192.168.100.100 with free space alert threshold of 10 GB 
+    and warning threshold of 20 GB
+#>
 
-# Script gathers system information about main storage devices,
-# forms JSON request and posts it to SDT API
-
-# Main variables
-# param (
-#     # Flag for QUIET mode
-#     [bool]$QUIET=$false,
-#     # Server IP or resolvable fqdn
-#     [string]$SERVER="192.168.0.2",
-#     # Threshold values of free space in GB to determine device state
-#     [int]$ALERT=5, # If device has less free space in GB than this value, device will be assignet alert state
-#     [int]$WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
-# )
-$QUIET=$false
-# Server IP or resolvable fqdn
-$SERVER="192.168.0.2"
-# Threshold values of free space in GB to determine device state
-$ALERT=5 # If device has less free space in GB than this value, device will be assignet alert state
-$WARNING=50 # If device has less free space in GB than this value, device will be assignet warning state
+param (
+    # Server IP/FQDN
+    [string]$s="192.168.0.2",
+    # Threshold free space in GB for device status WARNING
+    [int]$w=10,
+    # Threshold free space in GB for device status ALERT             
+    [int]$a=5,
+    # Quiet stdout                
+    [switch]$q
+    )
+    
 # API url
-$URI = "http://" + $SERVER + ":5000/api/v1/devices"
+$URI = "http://" + $s + ":5000/api/v1/devices"
 # Byte value for disk size conversion to MB
 $MB=1048576 # 1 MB = 1048576 B
-# Help message
-$HELP="
-    Usage: SDT-windows-agent.ps1 [-h] [-q] [options] [args]\n
-    This is linux agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv\n
-    Available options:\n
-        \t -h   \tPrint this help and exit\n
-        \t -q   \tQuiet stdout\n
-        \t -s   \tServer IP/FQDN\n
-        \t -a   \tThreshold free space in GB for device status ALERT\n
-        \t -w   \tThreshold free space in GB for device status WARNING\n
-    Example:\n
-        \t ./SDT-windows-agent.ps1 -s 192.168.100.100 -a 10 -w 20
-"
-
 # Determine server name
 $hostname = (Get-CimInstance -ClassName Win32_ComputerSystem).name
-
+# Server timeout in seconds
+$server_timeout_sec = 5
 # Convert threshold values from GB to MB
-$ALERT=$ALERT * 1024
-$WARNING=$WARNING * 1024
+$ALERT=$a * 1024
+$WARNING=$w * 1024
+
+# Check server availability
+$check_url = "http://" + $s + ":5000"
+try {
+    Invoke-RestMethod $check_url -TimeoutSec $server_timeout_sec >$null 2>&1
+} catch {
+    Write-Host "Server unavailable"
+    Exit
+}
 
 # Get information on system logical volumes which are not CD-ROM, without drive letter or with size attribute equal to 0
 $volumes = (Get-Volume |
@@ -81,7 +78,7 @@ foreach ($volume in $volumes){
             used_perc = $used_perc
             }
 
-        if (!$QUIET){
+        if (!$q){
             Write-Host "Device" $device "exists with id:" $response.id "Updating..."
             # Put new data for existing device
             Invoke-RestMethod -Method 'Put' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" | ConvertTo-Json
@@ -101,14 +98,14 @@ foreach ($volume in $volumes){
             used_perc = $used_perc
             }
 
-        if (!$QUIET){
+        if (!$q){
             Write-Host "Device" $device "doesnt exist. Creating..."
             # Post new device data
-            Invoke-RestMethod -Method 'Post' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" >$null 2>&1
+            Invoke-RestMethod -Method 'Post' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" | ConvertTo-Json
         }
         else {
             # Post new device data    
-            Invoke-RestMethod -Method 'Post' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" | ConvertTo-Json
+            Invoke-RestMethod -Method 'Post' -Uri $URI -Body ($params|ConvertTo-Json) -ContentType "application/json" >$null 2>&1
         }
         }
     }
