@@ -1,0 +1,41 @@
+- name: Lets look at some disks
+  hosts: clients
+  become: false
+  gather_facts: true
+  vars:
+    MB: 1048576 # 1 MB = 1048576 B
+    exclude_fstypes: 
+      - "squashfs"
+    json_data:
+      host: "testas"
+      device: "/testas"
+      state: "normal"
+      size_mb: 10000
+      free_mb: 1000
+      used_perc: 99
+      output_fields: "*"
+    
+
+  tasks:
+  - name: Output disk information
+    debug:
+      msg: "{{ hostvars[inventory_hostname].ansible_nodename }}
+        {{ hostvars[inventory_hostname].ansible_default_ipv4.address }}
+        {{ item.mount }}
+        {{ (item.size_total/MB)|round|int }}
+        {{ (item.size_available/MB)|round|int }}
+        {{ ((item.size_total-item.size_available)*(100/item.size_total))|round|int }}"
+    with_items: "{{ hostvars[inventory_hostname].ansible_mounts }}"
+    when: item.fstype not in exclude_fstypes
+
+  - name: Post to API
+    uri:
+      url: "http://192.168.0.2:5000/api/v1/devices"
+      method: POST
+      validate_certs: no
+      follow_redirects: all
+      body: "{{ json_data|to_json }}"
+      return_content: yes
+      body_format: json
+      status_code: 201
+    delegate_to: 127.0.0.1
