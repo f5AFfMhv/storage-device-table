@@ -2,40 +2,123 @@
   hosts: clients
   become: false
   gather_facts: true
+  ignore_unreachable: true
   vars:
+    SERVER: "192.168.0.2"
+    ALERT: 10 # If device has less free space in GB than this value, device will be assignet alert state
+    WARNING: 250 # If device has less free space in GB than this value, device will be assignet warning state
+    URL: "http://{{ SERVER }}:5000/api/v1/devices"
     MB: 1048576 # 1 MB = 1048576 B
-    exclude_fstypes: 
+    GB: 1073741824 # 1 GB = 1073741824 B
+    timeout: 5 # server timeout in seconds
+    exclude_fstypes:
       - "squashfs"
-    json_data:
-      host: "testas"
-      device: "/testas"
-      state: "normal"
-      size_mb: 10000
-      free_mb: 1000
-      used_perc: 99
-      output_fields: "*"
-    
+      - "fuse"
+      - "tmpfs"
+      - "devtmpfs"
+      - "overlay"
+      - "vfat"
+      - "fat"
 
   tasks:
-  - name: Output disk information
-    debug:
-      msg: "{{ hostvars[inventory_hostname].ansible_nodename }}
-        {{ hostvars[inventory_hostname].ansible_default_ipv4.address }}
-        {{ item.mount }}
-        {{ (item.size_total/MB)|round|int }}
-        {{ (item.size_available/MB)|round|int }}
-        {{ ((item.size_total-item.size_available)*(100/item.size_total))|round|int }}"
+  - name: Check if server is available
+    uri:
+      url: "http://{{ SERVER }}:5000"
+      method: GET
+      validate_certs: false
+      follow_redirects: all
+      return_content: false
+      status_code: 200
+      timeout: "{{ timeout }}"
+    run_once: true
+    delegate_to: 127.0.0.1
+
+  - name: Find existing devices in DB
+    uri:
+      url: "{{ URL }}?host={{ hostvars[inventory_hostname].ansible_nodename }}&device={{ item.mount }}"
+      method: GET
+      validate_certs: false
+      follow_redirects: all
+      return_content: true
+      body_format: json
+      status_code: 200
+    ignore_errors: true
+    delegate_to: 127.0.0.1
     with_items: "{{ hostvars[inventory_hostname].ansible_mounts }}"
     when: item.fstype not in exclude_fstypes
+    register: result
 
-  - name: Post to API
+  # - debug:
+  #     var: (item.json | json_query(jmesquery))[0]
+  #   vars:
+  #     jmesquery: "[*].id"
+  #   with_items: "{{ result.results }}"
+  #   when: item.skipped is not defined and item.failed == false
+
+  # - debug:
+  #     msg: '{{ (item.json | json_query(jmesquery))[0] }} 
+  #     {% if (item.item.size_available/MB)|round|int < ALERT %}
+  #       "alert"
+  #     {% elif (item.item.size_available/MB)|round|int < WARNING %}
+  #       "warning"
+  #     {% else %}
+  #       "normal"
+  #     {% endif %}
+  #     '
+  #   vars:
+  #     jmesquery: "[*].id"
+  #   with_items: "{{ result.results }}"
+  #   when: item.skipped is not defined and item.failed == false
+
+  - name: Update data 
+    vars:
+      jmesquery: "[*].id"
+      json_data:
+        id: "{{ (item.json | json_query(jmesquery))[0] }}"
+        state: '{% if (item.item.size_available/GB)|round|int < ALERT %}alert{% elif (item.item.size_available/GB)|round|int < WARNING %}warning{% else %}normal{% endif %}'
+        size_mb: "{{ (item.item.size_total/MB)|round|int }}"
+        free_mb: "{{ (item.item.size_available/MB)|round|int }}"
+        used_perc: "{{ (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int }}"
     uri:
-      url: "http://192.168.0.2:5000/api/v1/devices"
-      method: POST
-      validate_certs: no
+      url: "{{ URL }}"
+      method: PUT
+      validate_certs: false
       follow_redirects: all
       body: "{{ json_data|to_json }}"
-      return_content: yes
+      return_content: false
+      body_format: json
+      status_code: 200
+    ignore_errors: true
+    #delegate_to: 127.0.0.1
+    with_items: "{{ result.results }}"
+    when: item.skipped is not defined and item.failed == false
+
+  # - debug:
+  #     var: (item.json | json_query(jmesquery))[0]
+  #   vars:
+  #     jmesquery: "[*].id"
+  #   with_items: "{{ result.results }}"
+  #   when: item.skipped is not defined and item.failed == false
+
+  - name: Post data to API
+    vars:
+      json_data:
+        host: "{{ hostvars[inventory_hostname].ansible_nodename }}"
+        device: "{{ item.item.mount }}"
+        state: '{% if (item.item.size_available/GB)|round|int < ALERT %}alert{% elif (item.item.size_available/GB)|round|int < WARNING %}warning{% else %}normal{% endif %}'
+        size_mb: "{{ (item.item.size_total/MB)|round|int }}"
+        free_mb: "{{ (item.item.size_available/MB)|round|int }}"
+        used_perc: "{{ (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int }}"
+    uri:
+      url: "{{ URL }}"
+      method: POST
+      validate_certs: false
+      follow_redirects: all
+      body: "{{ json_data|to_json }}"
+      return_content: false
       body_format: json
       status_code: 201
-    delegate_to: 127.0.0.1
+    ignore_errors: true
+    #delegate_to: 127.0.0.1
+    with_items: "{{ result.results }}"
+    when: item.skipped is not defined and item.failed == true

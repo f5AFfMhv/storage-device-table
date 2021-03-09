@@ -36,8 +36,8 @@ class figure:
         # Parse data to list for ploting
         for self.d in self.server:
             self.devices.append(self.d.get('device'))
-            self.free.append(round((self.d.get('free_mb')/1024),2))
-            self.used.append(round((self.d.get('size_mb')/1024 - self.d.get('free_mb')/1024),2))
+            self.free.append(round((int(self.d.get('free_mb'))/1024),2))
+            self.used.append(round((int(self.d.get('size_mb'))/1024 - int(self.d.get('free_mb'))/1024),2))
 
         # Add data to graph.
         self.fig.add_trace(go.Bar(x=self.devices, y=self.used, name='Used space, GB'))

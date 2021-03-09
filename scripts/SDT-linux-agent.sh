@@ -104,9 +104,9 @@ for DEVICE in $DEVICE_LIST; do
         echo {\"host\":\"$HOSTNAME\", \
             \"device\":\"$DEVICE\", \
             \"state\":\"$STATE\", \
-            \"size_mb\":${SIZE%?}, \
-            \"free_mb\":${FREE%?}, \
-            \"used_perc\":${USE%?}} > $REQUEST
+            \"size_mb\":\"${SIZE%?}\", \
+            \"free_mb\":\"${FREE%?}\", \
+            \"used_perc\":\"${USE%?}\"} > $REQUEST
 
         # Make API POST call
         if [[ $QUIET == true ]]; then
@@ -132,9 +132,9 @@ for DEVICE in $DEVICE_LIST; do
         # ${var%} - removes last symbol from variable
         echo {\"id\":\"$ID\", \
             \"state\":\"$STATE\", \
-            \"size_mb\":${SIZE%?}, \
-            \"free_mb\":${FREE%?}, \
-            \"used_perc\":${USE%?}} > $REQUEST
+            \"size_mb\":\"${SIZE%?}\", \
+            \"free_mb\":\"${FREE%?}\", \
+            \"used_perc\":\"${USE%?}\"} > $REQUEST
 
         # Make API PUT call
         if [[ $QUIET == true ]]; then

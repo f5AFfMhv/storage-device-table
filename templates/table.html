@@ -57,29 +57,29 @@
         <td>{{ i.device }}</td>
         <td>{{ i.state }}</td>
         <td align="right">
-          {% if i.size_mb >= 104857600 %}
-            {{ (i.size_mb / 1048576)|round|int }} TB
-          {% elif i.size_mb >= 1048576 %}
-            {{ (i.size_mb / 1048576)|round(1) }} TB
-          {% elif i.size_mb >= 102400 %}
-            {{ (i.size_mb / 1024)|round|int }} GB
-          {% elif i.size_mb >= 1024 %}
-            {{ (i.size_mb / 1024)|round(1) }} GB
+          {% if i.size_mb|int >= 104857600 %}
+            {{ (i.size_mb|int / 1048576)|round|int }} TB
+          {% elif i.size_mb|int >= 1048576 %}
+            {{ (i.size_mb|int / 1048576)|round(1) }} TB
+          {% elif i.size_mb|int >= 102400 %}
+            {{ (i.size_mb|int / 1024)|round|int }} GB
+          {% elif i.size_mb|int >= 1024 %}
+            {{ (i.size_mb|int / 1024)|round(1) }} GB
           {% else %}
-            {{ i.size_mb }} MB
+            {{ i.size_mb|int }} MB
           {% endif %}
         </td>
         <td align="right">
-          {% if i.free_mb >= 104857600 %}
-            {{ (i.free_mb / 1048576)|round|int }} TB
-          {% elif i.free_mb >= 1048576 %}
-            {{ (i.free_mb / 1048576)|round(1) }} TB
-          {% elif i.free_mb >= 102400 %}
-            {{ (i.free_mb / 1024)|round|int }} GB
-          {% elif i.free_mb >= 1024 %}
-            {{ (i.free_mb / 1024)|round(1) }} GB
+          {% if i.free_mb|int >= 104857600 %}
+            {{ (i.free_mb|int / 1048576)|round|int }} TB
+          {% elif i.free_mb|int >= 1048576 %}
+            {{ (i.free_mb|int / 1048576)|round(1) }} TB
+          {% elif i.free_mb|int >= 102400 %}
+            {{ (i.free_mb|int / 1024)|round|int }} GB
+          {% elif i.free_mb|int >= 1024 %}
+            {{ (i.free_mb|int / 1024)|round(1) }} GB
           {% else %}
-            {{ i.free_mb }} MB
+            {{ i.free_mb|int }} MB
           {% endif %}
         </td>
         <td align="right">{{ i.used_perc }}% <progress style="width:40px;" value="{{ i.used_perc }}" max="100"></progress></td>
@@ -93,7 +93,8 @@
   <br>
   <p>Downloads:</p>
   <a href="download/linux_agent">➡️ Agent for linux</a><br>
-  <a href="download/windows_agent">➡️ Agent for windows</a>
+  <a href="download/windows_agent">➡️ Agent for windows</a><br>
+  <a href="download/ansible_playbook">➡️ Ansible playbook</a>
   <br><br>
 </body>
 <br>

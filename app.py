@@ -116,6 +116,8 @@ def download(agent):
 	    path = "scripts/SDT-linux-agent.sh"
     elif agent == "windows_agent":
     	path = "scripts/SDT-windows-agent.ps1"
+    elif agent == "ansible_playbook":
+        	path = "scripts/SDT-ansible-playbook.yml"
     else:
         return page_not_found(404)
     return send_file(path, as_attachment=True)
@@ -212,12 +214,12 @@ def create_record():
     # Sanity check for request values
     if type(request.json.get('state')) != str or request.json.get('state') == None:
         return bad_request(400, 'state value incorect or missing')
-    if type(request.json.get('size_mb')) != int or request.json.get('size_mb') == None:
-        return bad_request(400, 'size_mb value incorect or missing')
-    if type(request.json.get('free_mb')) != int or request.json.get('free_mb') == None:
-        return bad_request(400, 'free_mb value incorect or missing')
-    if type(request.json.get('used_perc')) != int or request.json.get('used_perc') == None:
-        return bad_request(400, 'used_perc value incorect or missing')
+    # if type(request.json.get('size_mb')) != int or request.json.get('size_mb') == None:
+    #     return bad_request(400, 'size_mb value incorect or missing')
+    # if type(request.json.get('free_mb')) != int or request.json.get('free_mb') == None:
+    #     return bad_request(400, 'free_mb value incorect or missing')
+    # if type(request.json.get('used_perc')) != int or request.json.get('used_perc') == None:
+    #     return bad_request(400, 'used_perc value incorect or missing')
 
     server_list = (request.json.get('host'), request.json.get('device'), request.json.get('state'), 
                     request.json.get('size_mb'), request.json.get('free_mb'), request.json.get('used_perc'), 
@@ -250,12 +252,12 @@ def update_record():
     # Sanity check for request values
     if type(request.json.get('state')) != str or request.json.get('state') == None:
         return bad_request(400, 'state value incorect or missing')
-    if type(request.json.get('size_mb')) != int or request.json.get('size_mb') == None:
-        return bad_request(400, 'size_mb value incorect or missing')
-    if type(request.json.get('free_mb')) != int or request.json.get('free_mb') == None:
-        return bad_request(400, 'free_mb value incorect or missing')
-    if type(request.json.get('used_perc')) != int or request.json.get('used_perc') == None:
-        return bad_request(400, 'used_perc value incorect or missing')
+    # if type(request.json.get('size_mb')) != int or request.json.get('size_mb') == None:
+    #     return bad_request(400, 'size_mb value incorect or missing')
+    # if type(request.json.get('free_mb')) != int or request.json.get('free_mb') == None:
+    #     return bad_request(400, 'free_mb value incorect or missing')
+    # if type(request.json.get('used_perc')) != int or request.json.get('used_perc') == None:
+    #     return bad_request(400, 'used_perc value incorect or missing')
 
     # Form list of new values from request (no NULL values should be added, because of previous check)
     server_list = (request.json.get('state'), request.json.get('size_mb'), request.json.get('free_mb'),
