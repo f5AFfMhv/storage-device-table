@@ -4,12 +4,12 @@
   gather_facts: true
   ignore_unreachable: true
   vars:
-    SERVER: "192.168.0.2"
-    ALERT: 10 # If device has less free space in GB than this value, device will be assignet alert state
-    WARNING: 250 # If device has less free space in GB than this value, device will be assignet warning state
-    URL: "http://{{ SERVER }}:5000/api/v1/devices"
     MB: 1048576 # 1 MB = 1048576 B
     GB: 1073741824 # 1 GB = 1073741824 B
+    SERVER: "192.168.0.2"
+    ALERT: 90 # If device usage in percents is greater than this value, device will be assigned alert state
+    WARNING: 80 # If device usage in percents is greater than this value, device will be assigned warning state
+    URL: "http://{{ SERVER }}:5000/api/v1/devices"
     timeout: 5 # server timeout in seconds
     exclude_fstypes:
       - "squashfs"
@@ -48,34 +48,12 @@
     when: item.fstype not in exclude_fstypes
     register: result
 
-  # - debug:
-  #     var: (item.json | json_query(jmesquery))[0]
-  #   vars:
-  #     jmesquery: "[*].id"
-  #   with_items: "{{ result.results }}"
-  #   when: item.skipped is not defined and item.failed == false
-
-  # - debug:
-  #     msg: '{{ (item.json | json_query(jmesquery))[0] }} 
-  #     {% if (item.item.size_available/MB)|round|int < ALERT %}
-  #       "alert"
-  #     {% elif (item.item.size_available/MB)|round|int < WARNING %}
-  #       "warning"
-  #     {% else %}
-  #       "normal"
-  #     {% endif %}
-  #     '
-  #   vars:
-  #     jmesquery: "[*].id"
-  #   with_items: "{{ result.results }}"
-  #   when: item.skipped is not defined and item.failed == false
-
   - name: Update data 
     vars:
       jmesquery: "[*].id"
       json_data:
         id: "{{ (item.json | json_query(jmesquery))[0] }}"
-        state: '{% if (item.item.size_available/GB)|round|int < ALERT %}alert{% elif (item.item.size_available/GB)|round|int < WARNING %}warning{% else %}normal{% endif %}'
+        state: '{% if (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > ALERT %}alert{% elif (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > WARNING %}warning{% else %}normal{% endif %}'
         size_mb: "{{ (item.item.size_total/MB)|round|int }}"
         free_mb: "{{ (item.item.size_available/MB)|round|int }}"
         used_perc: "{{ (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int }}"
@@ -93,19 +71,12 @@
     with_items: "{{ result.results }}"
     when: item.skipped is not defined and item.failed == false
 
-  # - debug:
-  #     var: (item.json | json_query(jmesquery))[0]
-  #   vars:
-  #     jmesquery: "[*].id"
-  #   with_items: "{{ result.results }}"
-  #   when: item.skipped is not defined and item.failed == false
-
   - name: Post data to API
     vars:
       json_data:
         host: "{{ hostvars[inventory_hostname].ansible_nodename }}"
         device: "{{ item.item.mount }}"
-        state: '{% if (item.item.size_available/GB)|round|int < ALERT %}alert{% elif (item.item.size_available/GB)|round|int < WARNING %}warning{% else %}normal{% endif %}'
+        state: '{% if (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > ALERT %}alert{% elif (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > WARNING %}warning{% else %}normal{% endif %}'
         size_mb: "{{ (item.item.size_total/MB)|round|int }}"
         free_mb: "{{ (item.item.size_available/MB)|round|int }}"
         used_perc: "{{ (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int }}"
@@ -121,4 +92,4 @@
     ignore_errors: true
     #delegate_to: 127.0.0.1
     with_items: "{{ result.results }}"
-    when: item.skipped is not defined and item.failed == true
+    when: item.skipped is not defined and item.failed == true and item.item.mount is not match("/boot/*") and item.item.mount is not match("/run/*")

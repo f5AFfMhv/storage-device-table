@@ -11,9 +11,9 @@
 SERVER="192.168.0.2"
 # List of mounted storage devices to be monitored. Add -x options for file system types you want to exclude
 DEVICE_LIST=$(df -x squashfs -x tmpfs -x devtmpfs -x overlay --output=target | tail -n +2)
-# Threshold values of free space in GB to determine device state
-ALERT=10 # If device has less free space in GB than this value, device will be assignet alert state
-WARNING=25 # If device has less free space in GB than this value, device will be assignet warning state
+# Threshold values of used space in percentage to determine device state
+ALERT=90 # If device usage in percents is greater than this value, device will be assigned alert state
+WARNING=80 # If device usage in percents is greater than this value, device will be assigned warning state
 # Temporary request file location
 REQUEST="/tmp/request"
 # Flag for QUIET mode
@@ -32,10 +32,10 @@ HELP="
         \t -h   \tPrint this help and exit\n
         \t -q   \tQuiet stdout\n
         \t -s   \tServer IP/FQDN\n
-        \t -a   \tThreshold free space in GB for device status ALERT\n
-        \t -w   \tThreshold free space in GB for device status WARNING\n
+        \t -a   \tThreshold device usage in percents for device status ALERT\n
+        \t -w   \tThreshold device usage in percents for device status WARNING\n
     Example:\n
-        \t ./$(basename "${BASH_SOURCE[0]}") -q -s 192.168.100.100 -a 10 -w 20
+        \t ./$(basename "${BASH_SOURCE[0]}") -q -s 192.168.100.100 -a 90 -w 80
 "
 
 # Parse input arguments
@@ -75,87 +75,86 @@ if ! [[ $WARNING =~ $INTEGERS_RE ]] ; then
     exit 1
 fi
 
-# Convert threshold values from GB to MB
-ALERT=$(( ALERT * 1024 ))
-WARNING=$(( WARNING * 1024 ))
 # For every storage device in list, get information about its size, free space and usage in percentage.
 for DEVICE in $DEVICE_LIST; do
-    SIZE=$(df -BM $DEVICE | tail -n +2 | awk '{print $2}')
-    FREE=$(df -BM $DEVICE | tail -n +2 | awk '{print $4}')
-    USE=$(df -h $DEVICE | tail -n +2 | awk '{print $5}')
-    # From gathered information determine storage device state (alert, warning, normal)
-    if (( ${FREE%?} < $ALERT )); then
-        STATE=alert
-    elif (( ${FREE%?} < $WARNING )); then
-        STATE=warning
-    else
-        STATE=normal
-    fi
-    # Make API request for hostname and device. If device ID not found - create record, else - update values
-    echo "$URI?host=$HOSTNAME&device=$DEVICE" > $REQUEST
-    # Try to get device ID from request
-    ID=$(curl -s $(cat $REQUEST) | jq '.[].id' 2>/dev/null)
-    if [[ -z $ID ]]; then
-        if [[ $QUIET != true ]]; then
-            echo "Device $DEVICE doesnt exist. Creating..."
-        fi
-        # Form API request in JSON format (\" preserves " character in JSON request)
-        # ${var%?} - removes last symbol from variable
-        echo {\"host\":\"$HOSTNAME\", \
-            \"device\":\"$DEVICE\", \
-            \"state\":\"$STATE\", \
-            \"size_mb\":\"${SIZE%?}\", \
-            \"free_mb\":\"${FREE%?}\", \
-            \"used_perc\":\"${USE%?}\"} > $REQUEST
-
-        # Make API POST call
-        if [[ $QUIET == true ]]; then
-            curl -s \
-                --header "Content-type: application/json" \
-                --request POST \
-                --data @$REQUEST \
-                $URI \
-                > /dev/null
+    if [[ $DEVICE != /boot* ]]; then
+        SIZE=$(df -BM $DEVICE | tail -n +2 | awk '{print $2}')
+        FREE=$(df -BM $DEVICE | tail -n +2 | awk '{print $4}')
+        USE=$(df -h $DEVICE | tail -n +2 | awk '{print $5}')
+        # From gathered information determine storage device state (alert, warning, normal)
+        if (( ${USE%?} > $ALERT )); then
+            STATE=alert
+        elif (( ${USE%?} > $WARNING )); then
+            STATE=warning
         else
-            curl -s \
-                --header "Content-type: application/json" \
-                --request POST \
-                --data @$REQUEST \
-                $URI \
-                | jq
+            STATE=normal
         fi
-    else
-        if [[ $QUIET != true ]]; then
-            echo "Device $DEVICE exists with id: $ID. Updating..."
-        fi
-        # Form API request in JSON format (\" preserves " character in JSON request)
-        # ${var%} - removes last symbol from variable
-        echo {\"id\":\"$ID\", \
-            \"state\":\"$STATE\", \
-            \"size_mb\":\"${SIZE%?}\", \
-            \"free_mb\":\"${FREE%?}\", \
-            \"used_perc\":\"${USE%?}\"} > $REQUEST
+        # Make API request for hostname and device. If device ID not found - create record, else - update values
+        echo "$URI?host=$HOSTNAME&device=$DEVICE" > $REQUEST
+        # Try to get device ID from request
+        ID=$(curl -s $(cat $REQUEST) | jq '.[].id' 2>/dev/null)
+        if [[ -z $ID ]]; then
+            if [[ $QUIET != true ]]; then
+                echo "Device $DEVICE doesnt exist. Creating..."
+            fi
+            # Form API request in JSON format (\" preserves " character in JSON request)
+            # ${var%?} - removes last symbol from variable
+            echo {\"host\":\"$HOSTNAME\", \
+                \"device\":\"$DEVICE\", \
+                \"state\":\"$STATE\", \
+                \"size_mb\":\"${SIZE%?}\", \
+                \"free_mb\":\"${FREE%?}\", \
+                \"used_perc\":\"${USE%?}\"} > $REQUEST
 
-        # Make API PUT call
-        if [[ $QUIET == true ]]; then
-            curl -s \
-                --header "Content-type: application/json" \
-                --request PUT \
-                --data @$REQUEST \
-                $URI \
-                > /dev/null
+            # Make API POST call
+            if [[ $QUIET == true ]]; then
+                curl -s \
+                    --header "Content-type: application/json" \
+                    --request POST \
+                    --data @$REQUEST \
+                    $URI \
+                    > /dev/null
+            else
+                curl -s \
+                    --header "Content-type: application/json" \
+                    --request POST \
+                    --data @$REQUEST \
+                    $URI \
+                    | jq
+            fi
         else
-            curl -s \
-                --header "Content-type: application/json" \
-                --request PUT \
-                --data @$REQUEST \
-                $URI \
-                | jq
-        fi
-    fi
+            if [[ $QUIET != true ]]; then
+                echo "Device $DEVICE exists with id: $ID. Updating..."
+            fi
+            # Form API request in JSON format (\" preserves " character in JSON request)
+            # ${var%} - removes last symbol from variable
+            echo {\"id\":\"$ID\", \
+                \"state\":\"$STATE\", \
+                \"size_mb\":\"${SIZE%?}\", \
+                \"free_mb\":\"${FREE%?}\", \
+                \"used_perc\":\"${USE%?}\"} > $REQUEST
 
-    # Remove temporary file
-    rm -f $REQUEST 
+            # Make API PUT call
+            if [[ $QUIET == true ]]; then
+                curl -s \
+                    --header "Content-type: application/json" \
+                    --request PUT \
+                    --data @$REQUEST \
+                    $URI \
+                    > /dev/null
+            else
+                curl -s \
+                    --header "Content-type: application/json" \
+                    --request PUT \
+                    --data @$REQUEST \
+                    $URI \
+                    | jq
+            fi
+        fi
+
+        # Remove temporary file
+        rm -f $REQUEST 
+    fi
 done
 
 

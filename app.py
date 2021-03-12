@@ -296,4 +296,4 @@ def delete_record():
     db_mod(DB_FILE, sql, (id,))
     return jsonify({'result': True}), 200
 
-app.run(host='0.0.0.0')
+app.run(host='0.0.0.0', port=5000)
