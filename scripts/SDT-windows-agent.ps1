@@ -3,18 +3,18 @@
 .DESCRIPTION
     This is linux agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv
 .EXAMPLE
-    C:\PS> .\SDT-windows-agent.ps1 -s 192.168.100.100 -a 10 -w 20  
-    Post drive information to server 192.168.100.100 with free space alert threshold of 10 GB 
-    and warning threshold of 20 GB
+    C:\PS> .\SDT-windows-agent.ps1 -s 192.168.100.100 -a 90 -w 80  
+    Post drive information to server 192.168.100.100 with usage alert threshold of 90%
+    and warning threshold of 80%.
 #>
 
 param (
     # Server IP/FQDN
     [string]$s="192.168.0.2",
-    # Threshold free space in GB for device status WARNING
-    [int]$w=10,
-    # Threshold free space in GB for device status ALERT             
-    [int]$a=5,
+    # Threshold usage in percents for device status WARNING
+    [int]$w=70,
+    # Threshold usage in percents for device status ALERT             
+    [int]$a=90,
     # Quiet stdout                
     [switch]$q
     )
@@ -27,9 +27,6 @@ $MB=1048576 # 1 MB = 1048576 B
 $hostname = (Get-CimInstance -ClassName Win32_ComputerSystem).name
 # Server timeout in seconds
 $server_timeout_sec = 5
-# Convert threshold values from GB to MB
-$ALERT=$a * 1024
-$WARNING=$w * 1024
 
 # Check server availability
 $check_url = "http://" + $s + ":5000"
@@ -51,16 +48,16 @@ foreach ($volume in $volumes){
     $device = $Volume.DriveLetter + ":" + $Volume.FileSystemLabel # Drive letter and label
     $size = [math]::floor($Volume.Size/$MB) # Rounded drive size in MB
     $free = [math]::floor($Volume.SizeRemaining/$MB) # Rounded free drive space in MB
+    # Calculate drive usage in percents
+    $used_perc = [math]::floor(($size-$free)*100/$size)
+
     # From gathered information determine storage device state (alert, warning, normal)
-    if ($free -le $ALERT) 
+    if ($used_perc -ge $a) 
         {$state="alert"} 
-    elseif ($free -le $WARNING) 
+    elseif ($used_perc -ge $w) 
         {$state="warning"}
     else 
         {$state="normal"}
-
-    # Calculate drive usage in percents
-    $used_perc = [math]::floor(($size-$free)*100/$size)
 
     # Form API request from hostname and drive name. If device ID not found - create record, else - update values
     $REQ_URI = $URI + "?host=" + $hostname + "&device=" + $device
