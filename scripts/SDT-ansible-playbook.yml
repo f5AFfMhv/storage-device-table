@@ -1,5 +1,5 @@
 - name: Lets look at some disks
-  hosts: clients
+  hosts: localhost
   become: false
   gather_facts: true
   ignore_unreachable: true
@@ -53,10 +53,10 @@
       jmesquery: "[*].id"
       json_data:
         id: "{{ (item.json | json_query(jmesquery))[0] }}"
-        state: '{% if (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > ALERT %}alert{% elif (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > WARNING %}warning{% else %}normal{% endif %}'
         size_mb: "{{ (item.item.size_total/MB)|round|int }}"
         free_mb: "{{ (item.item.size_available/MB)|round|int }}"
         used_perc: "{{ (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int }}"
+        state: '{% if (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > ALERT %}alert{% elif (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > WARNING %}warning{% else %}normal{% endif %}'       
     uri:
       url: "{{ URL }}"
       method: PUT
@@ -76,10 +76,10 @@
       json_data:
         host: "{{ hostvars[inventory_hostname].ansible_nodename }}"
         device: "{{ item.item.mount }}"
-        state: '{% if (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > ALERT %}alert{% elif (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > WARNING %}warning{% else %}normal{% endif %}'
         size_mb: "{{ (item.item.size_total/MB)|round|int }}"
         free_mb: "{{ (item.item.size_available/MB)|round|int }}"
         used_perc: "{{ (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int }}"
+        state: '{% if (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > ALERT %}alert{% elif (100*(item.item.size_total-item.item.size_available)/item.item.size_total)|round|int > WARNING %}warning{% else %}normal{% endif %}'
     uri:
       url: "{{ URL }}"
       method: POST
