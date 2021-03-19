@@ -1,0 +1,10 @@
+.vscode/
+__pycache__/
+tests/
+frontend/
+iframe_figures/
+scripts/ansible.cfg
+scripts/inventory
+servers.db
+SD_table.csv
+clean.db
