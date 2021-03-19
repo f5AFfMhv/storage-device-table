@@ -29,7 +29,8 @@ import json
 import pandas as pd
 
 # Variables
-BASE = 'http://localhost:5000'
+PORT = 5000
+BASE = 'http://localhost:' + str(PORT)
 API = '/api/v1/devices' # API uri
 BASE_URL = BASE + API
 DB_FILE = 'SDT.db'
@@ -277,4 +278,4 @@ def delete_record():
     db_mod(DB_FILE, sql, (id,))
     return jsonify({'result': True}), 200
 
-app.run(host='0.0.0.0', port=5000)
+app.run(host='0.0.0.0', port=PORT)
