@@ -1,17 +1,19 @@
 # What is SDT?
-
 Storage Device Table is monitoring solution containing RESTful API and web application. Application is writen in python3 and is based on Flask module.  
 Web application is refreshed every minute. Pressing on server hostname generates plotly bargraph with that server storage information in GB.  
 All data from internal database can be exported to CSV file.
 
-![Imgur](https://i.imgur.com/UIilfT7.gif)
+<div align="center">
+    <img src="https://i.imgur.com/UIilfT7.gif" width="100%" alt="api"/>
+</div>
 
 # API
-
 SDT data internaly is saved in SQLite database. Clients post data about each device individualy.  
 Data contains information about server hostname, drive mount point, device total size in MB, free space in MB, device usage in percentage. Aditionaly application saves server IP address and update time to database. Each storage device is asigne unique ID by database itself. For more information on API functionality check project wiki page.
 
-![Imgur](https://i.imgur.com/QCW8o3Y.gif)
+<div align="center">
+    <img src="https://i.imgur.com/QCW8o3Y.gif" width="100%" alt="api"/>
+</div>
 
 # Agents
 
