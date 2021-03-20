@@ -24,15 +24,17 @@ param (
     [switch]$ad
     )
     
+# Server port
+$PORT = "5000"
 # API url
-$URI = "http://" + $s + ":5000/api/v1/devices"
+$URI = "http://" + $s + ":" + $PORT + "/api/v1/devices"
 # Byte value for disk size conversion to MB
 $MB=1048576 # 1 MB = 1048576 B
 # Server timeout in seconds
 $server_timeout_sec = 5
 
 # Check server availability
-$check_url = "http://" + $s + ":5000"
+$check_url = "http://" + $s + ":" + $PORT
 try {
     Invoke-RestMethod $check_url -TimeoutSec $server_timeout_sec >$null 2>&1
 } catch {
