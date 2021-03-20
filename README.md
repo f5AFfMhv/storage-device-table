@@ -50,12 +50,24 @@ systemctl enable sdt
 systemctl start sdt
 ````
 
+# Docker
+To run docker container run command
+````
+docker run -d -p 5000:5000 f5affmhv/storage-device-table
+````
+Or build image from Dockerfile
+````
+git clone http://localhost:3000/mint/disk_monitor.git
+cd disk_monitor/
+docker build -t storage-device-table .
+````
+
 # API
 SDT data internaly is saved in SQLite database. Clients post data about each device individualy.  
 Data contains information about server hostname, drive mount point, device total size in MB, free space in MB, device usage in percentage. Aditionaly application saves server IP address and update time to database. Each storage device is asigne unique ID by database itself. For more information on API functionality check project wiki page.
 
 <div align="center">
-    <img src="https://i.imgur.com/QCW8o3Y.gif" width="80%" alt="api"/>
+    <img src="https://i.imgur.com/QCW8o3Y.gif" width="100%" alt="api"/>
 </div>
 
 # Agents
