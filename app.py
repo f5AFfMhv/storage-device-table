@@ -2,13 +2,14 @@
 
 """
 This application is RESTful API for monitoring storage device usage.
-Aplication is made using Flask. Apart from API this aplication renders HTML table with all records in the internal
+Application is made using Flask. Apart from API this application renders HTML table with all records in the internal
 SQLite DB file using API calls.
-For more information how to use API check this project Github page https://github.com/f5AFfMhv/storage-device-table
+For more information how to use API check this project Github page
+https://github.com/f5AFfMhv/storage-device-table
 
 
-Copyright (C) 2021 Martynas J. 
-f5AFfMhv@protonmail.com  
+Copyright (C) 2021 Martynas J.
+f5AFfMhv@protonmail.com
 https://github.com/f5AFfMhv
 
 Tutorials: 
@@ -19,13 +20,13 @@ Tutorials:
     Flask render JINJA template - https://hackersandslackers.com/flask-jinja-templates/
 """
 
+import json
+import requests
 from flask import Flask, jsonify, request, make_response, send_file, redirect, render_template
 from datetime import datetime
 import sqlite3
-import requests
 import plotly.io as pio
 import graphs # Script for creating graphs
-import json
 import pandas as pd
 
 # Variables
@@ -115,11 +116,11 @@ def delete(id):
 @app.route('/download/<agent>')
 def download(agent):
     if agent == "linux_agent":
-	    path = "scripts/SDT-linux-agent.sh"
+        path = "scripts/SDT-linux-agent.sh"
     elif agent == "windows_agent":
-    	path = "scripts/SDT-windows-agent.ps1"
+        path = "scripts/SDT-windows-agent.ps1"
     elif agent == "ansible_playbook":
-        	path = "scripts/SDT-ansible-playbook.yml"
+        path = "scripts/SDT-ansible-playbook.yml"
     else:
         return page_not_found(404)
     return send_file(path, as_attachment=True)

@@ -75,7 +75,7 @@ Default values defined at the beginning of a script, values can be overwritten b
 ````
 ./SDT-linux-agent.sh -s 192.168.100.100 -a 90 -w 80
 ````
-will determine device state with thresholds: `>90% drive usage - alert`, `>80% drive usage - warning` and will try to post it to application running on 192.168.100.100.  
+will determine device state with thresholds: >90% drive usage - alert, >80% drive usage - warning and will try to post it to application running on 192.168.100.100.  
 For more information execute this command.
 ````
 ./SDT-linux-agent.sh -h
