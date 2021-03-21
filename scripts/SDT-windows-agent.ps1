@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
 .DESCRIPTION
-    This is windows agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv
+    This is windows agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv/storage-device-table
     Run 
         netsh advfirewall firewall set rule group="Windows Management Instrumentation (WMI)" new enable=yes
     on every client to allow remote information gathering.

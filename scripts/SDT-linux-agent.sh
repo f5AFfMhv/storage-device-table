@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Script gathers system information about main storage devices,
-# forms JSON file and posts it to SDT API
+# forms JSON file and posts it to SDT API.
+# For more information check https://github.com/f5AFfMhv/storage-device-table
 
 # DEPENDENCIES
 # jq - Command-line JSON processor
@@ -27,7 +28,7 @@ INTEGERS_RE='^[0-9]+$'
 # Help message
 HELP="
     Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-q] [options] [args]\n
-    This is linux agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv\n
+    This is linux agent for storage device monitoring application. For more information check https://github.com/f5AFfMhv/storage-device-table\n
     Available options:\n
         \t -h   \tPrint this help and exit\n
         \t -q   \tQuiet stdout\n

@@ -1,6 +1,6 @@
 # What is SDT?
-Storage Device Table is monitoring solution containing RESTful API and web application. Application is writen in python3 and is based on Flask module.  
-Web application is refreshed every minute. Pressing on server hostname generates plotly bargraph with that server storage information in GB.  
+Storage Device Table is monitoring solution containing RESTful API and web application. Application is written in python3 and is based on Flask module.  
+Web application is refreshed every minute. Pressing on server hostname generates plotly bar graph with servers storage information.  
 All data from internal database can be exported to CSV file.
 
 <div align="center">
@@ -8,42 +8,42 @@ All data from internal database can be exported to CSV file.
 </div>
 
 # Installation
-1. Clone repository
+1. Clone repository.
 ````
 cd /opt
-git clone http://localhost:3000/mint/disk_monitor.git
-cd disk_monitor/
+git clone https://github.com/f5AFfMhv/storage-device-table.git
+cd storage-device-table/
 ````
-2. Install requirements (`python3` and `pip` should be installed from your system repositories)
+2. Install requirements (`python3` and `pip` should be installed from your system repositories).
 ````
 pip3 install -r requirements.txt
 ````
-3. Make `app.py` executable
+3. Make `app.py` executable.
 ````
 chmod +x app.py
 ````
-4. Open port in firewall. In case of `firewalld` run these commands
+4. Open port in firewall. In case of `firewalld` run these commands.
 ````
 firewall-cmd --permanent --add-port=5000/tcp
 firewall-cmd --reload
 ````
-5. Run `app.py` to start server. To create service for `systemd` create `/etc/systemd/system/sdt.service` file containing
+5. Run `app.py` to start server. To create service for `systemd` create `/etc/systemd/system/sdt.service` file.
 ````
 [Unit]
-Description=Server device usage application service
+Description=Storage device usage monitor
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/disk_monitor
-ExecStart=/opt/disk_monitor/app.py
+WorkingDirectory=/opt/storage-device-table
+ExecStart=/opt/storage-device-table/app.py
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 ````
-6. Start service and configure it to start automaticaly at system startup
+6. Start and enable service.
 ````
 systemctl daemon-reload
 systemctl enable sdt
@@ -51,40 +51,38 @@ systemctl start sdt
 ````
 
 # Docker
-To run docker container run command
+To run application as docker container execute this command.
 ````
 docker run -d -p 5000:5000 f5affmhv/storage-device-table
 ````
 Or build image from Dockerfile
 ````
-git clone http://localhost:3000/mint/disk_monitor.git
-cd disk_monitor/
+git clone https://github.com/f5AFfMhv/storage-device-table.git
+cd storage-device-table/
 docker build -t storage-device-table .
 ````
 
 # API
-SDT data internaly is saved in SQLite database. Clients post data about each device individualy.  
-Data contains information about server hostname, drive mount point, device total size in MB, free space in MB, device usage in percentage. Aditionaly application saves server IP address and update time to database. Each storage device is asigne unique ID by database itself. For more information on API functionality check project wiki page.
-
-<div align="center">
-    <img src="https://i.imgur.com/QCW8o3Y.gif" width="100%" alt="api"/>
-</div>
+SDT data internally is saved in SQLite database. Clients post data about each device individually.  
+Data contains information about server hostname, drive mount point, device total size in MB, free space in MB, device usage in percentage and status. Additionally application saves server IP address and record update time to database. Each storage device is assigned unique ID by database itself. For more information on API functionality check project wiki page.
 
 # Agents
-Curently there are 3 agents for posting and updating data with SDT API.  
+Currently there are 3 agents for posting and updating data with SDT API.  
+
 ## SDT-linux-agent.sh
-Script gathers system information about main storage devices with `df` tool. Then it tries to find each device in database, if device exist JSON file is formed with new values and existing record is updated. Else new record is created in the database.  
-Default variables defined at the beginning of script. Also parameters can be overwriten by passing them as parameters when executing script. For example:  
+Script gathers system information about main storage devices with `df` tool. Then it tries to find each device in database, if device exist JSON file is formed with new values and existing record is updated. If device isn't found, new record is created in the database.  
+Default values defined at the beginning of a script, values can be overwritten by passing them as parameters when executing script. For example:  
 ````
 ./SDT-linux-agent.sh -s 192.168.100.100 -a 90 -w 80
 ````
-will determine device state with thresholds: >90% usage - alert, >80% usage - warning and will try to post it to 192.168.100.100.  
-For more information execute 
+will determine device state with thresholds: `>90% drive usage - alert`, `>80% drive usage - warning` and will try to post it to application running on 192.168.100.100.  
+For more information execute this command.
 ````
 ./SDT-linux-agent.sh -h
 ````
 ## SDT-ansible-playbook.sh
-This ansible playbook will gather information from hosts about their storage devices. Then it will check if SDT server is reachable. Then for each device it will check if device exists in database and depending on the result, will update or create record. Parameters can be modified in playbooks `vars` section.
+This ansible playbook will gather information from hosts about their storage devices and check if SDT server is reachable. Then for each device it will check if device exists in database and depending on the result, will update or create new record. Parameters can be modified in playbooks `vars` section.  
+To run playbook execute this command.
 ````
 ansible-playbook SDT-ansible-playbook.yml
 ````
@@ -93,7 +91,7 @@ Windows agent is powershell script. Its working principle is identical to linux 
 ````
 .\SDT-windows-agent.ps1 -s 192.168.100.100 -a 90 -w 80
 ````
-Aditionaly when `-ad` flag is passed, insted of checking only local drives, all computers from Active Directory will be queried. For this to work script should be executed by AD user which have sufient permmisions to query AD hosts. Also on each host this command should be run to allow remote query:
+Additionally when `-ad` flag is passed, instead of checking only local drives, all computers from Active Directory will be queried. For this to work script should be executed by AD user which have sufficient permissions to query AD hosts. Also on each host this command should be run to allow remote query:
 ````
 netsh advfirewall firewall set rule group="Windows Management Instrumentation (WMI)" new enable=yes
 ````

@@ -4,7 +4,7 @@
 This application is RESTful API for monitoring storage device usage.
 Aplication is made using Flask. Apart from API this aplication renders HTML table with all records in the internal
 SQLite DB file using API calls.
-For more information how to use API check this project Github page.
+For more information how to use API check this project Github page https://github.com/f5AFfMhv/storage-device-table
 
 
 Copyright (C) 2021 Martynas J. 

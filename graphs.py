@@ -3,7 +3,7 @@
 """
 This application generates plotly graph object containing host storage devices usage bargraph.
 Data for bargraph aquired by API call.
-For more information how to use API check this project Github page.
+For more information how to use API check this project Github page https://github.com/f5AFfMhv/storage-device-table.
 
 Copyright (C) 2021 Martynas J. 
 f5AFfMhv@protonmail.com  
