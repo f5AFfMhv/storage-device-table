@@ -9,8 +9,8 @@
     GB: 1073741824 # 1 GB = 1073741824 B
     SERVER: "192.168.0.2"
     PORT: "5000"
-    ALERT: 80 # If device usage in percents is greater than this value, device will be assigned alert state
-    WARNING: 70 # If device usage in percents is greater than this value, device will be assigned warning state
+    ALERT: 90 # If device usage in percents is greater than this value, device will be assigned alert state
+    WARNING: 80 # If device usage in percents is greater than this value, device will be assigned warning state
     URL: "http://{{ SERVER }}:{{ PORT }}/api/v1/devices"
     timeout: 5 # server timeout in seconds
     exclude_fstypes:

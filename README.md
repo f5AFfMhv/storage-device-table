@@ -4,7 +4,7 @@ Web application is refreshed every minute. Pressing on server hostname generates
 All data from internal database can be exported to CSV file.
 
 <div align="center">
-    <img src="https://i.imgur.com/Fyjmb0A.gif" width="80%" alt="api"/>
+    <img src="https://i.imgur.com/UIilfT7.gif" width="100%" alt="api"/>
 </div>
 
 # Installation
