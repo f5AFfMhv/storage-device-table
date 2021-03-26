@@ -51,7 +51,7 @@ systemctl start sdt
 ````
 
 # Docker
-To run application as docker container execute this command.
+Run docker container.
 ````
 docker run -d -p 5000:5000 f5affmhv/storage-device-table
 ````
@@ -75,19 +75,18 @@ Default values defined at the beginning of a script, values can be overwritten b
 ````
 ./SDT-linux-agent.sh -s 192.168.100.100 -a 90 -w 80
 ````
-will determine device state with thresholds: >90% drive usage - alert, >80% drive usage - warning and will try to post it to application running on 192.168.100.100.  
+will determine device state with thresholds: >90% drive usage - alert, >80% drive usage - warning and will try to post it to application running on 192.168.100.100. Script has a dependency on `jq` - command-line JSON processor, which can be installed from default repositories.  
 For more information execute this command.
 ````
 ./SDT-linux-agent.sh -h
 ````
-## SDT-ansible-playbook.sh
+## SDT-ansible-playbook.yml
 This ansible playbook will gather information from hosts about their storage devices and check if SDT server is reachable. Then for each device it will check if device exists in database and depending on the result, will update or create new record. Parameters can be modified in playbooks `vars` section.  
-To run playbook execute this command.
 ````
 ansible-playbook SDT-ansible-playbook.yml
 ````
 ## SDT-windows-agent.ps1
-Windows agent is powershell script. Its working principle is identical to linux shell script. To post data about drives to SDT API on server 192.168.100.100 with alert usage threshold of 90% and warning threshold of 80% execute script as follows:
+Windows agent working principle is identical to linux shell script. To post data about drives to SDT API on server 192.168.100.100 with alert usage threshold of 90% and warning threshold of 80% execute script as follows:
 ````
 .\SDT-windows-agent.ps1 -s 192.168.100.100 -a 90 -w 80
 ````
