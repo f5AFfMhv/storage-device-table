@@ -90,7 +90,10 @@ Windows agent working principle is identical to linux shell script. To post data
 ````
 .\SDT-windows-agent.ps1 -s 192.168.100.100 -a 90 -w 80
 ````
-Additionally when `-ad` flag is passed, instead of checking only local drives, all computers from Active Directory will be queried. For this to work script should be executed by AD user which have sufficient permissions to query AD hosts. Also on each host this command should be run to allow remote query:
+Additionally when `-ad` flag is passed, instead of checking only local drives, all computers from Active Directory will be queried. For this to work:
+* RSAT on client machine should be installed;
+* script should be executed by AD user which have sufficient permissions to query AD hosts;
+* on each host remote query should be allowed.
 ````
 netsh advfirewall firewall set rule group="Windows Management Instrumentation (WMI)" new enable=yes
 ````
