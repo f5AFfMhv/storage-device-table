@@ -1,0 +1,51 @@
+---
+# Ansible playbook for deploying SDT-linux-agent.sh
+# For more information check https://github.com/f5AFfMhv/storage-device-table
+- name: SDT linux agent deploy playbook
+  hosts: clients
+  become: false
+  gather_facts: false
+  ignore_unreachable: true
+  vars:
+    sdt_user: sdt
+    sdt_password: secure
+    script_dest: "/usr/local/bin/SDT-linux-agent.sh"
+    SERVER: "192.168.0.2"
+    ALERT: 90
+    WARNING: 80
+  tasks:
+    - name: Install jq - command-line JSON processor
+      package:
+        name: jq
+        state: present
+
+    - name: Create user for agent
+      user:
+        name: "{{ sdt_user }}"
+        password: "{{ sdt_password | password_hash('sha512') }}"
+        state: present
+        create_home: true
+    
+    # - name: Remove script from clients
+    #   file:
+    #     path: "{{ script_dest }}"
+    #     state: absent
+
+    - name: Copy script to clients
+      copy:
+        src: "SDT-linux-agent.sh"
+        dest: "{{ script_dest }}"
+        owner: "{{ sdt_user }}"
+        group: "{{ sdt_user }}"
+        mode: "0755"
+
+    - name: Create cron job for agent (execute every hour)
+      cron:
+        name: "SDT agent"
+        job: "{{ script_dest }} -q -s {{ SERVER }} -a {{ ALERT }} -w {{ WARNING }} > /dev/null"
+        minute: 0
+        state: present
+        user: "{{ sdt_user }}"
+
+        
+

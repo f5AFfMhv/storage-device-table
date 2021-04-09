@@ -121,6 +121,8 @@ def download(agent):
         path = "scripts/SDT-windows-agent.ps1"
     elif agent == "ansible_playbook":
         path = "scripts/SDT-ansible-playbook.yml"
+    elif agent == "deploy_playbook":
+        path = "scripts/deploy-linux-agent.yml"
     else:
         return page_not_found(404)
     return send_file(path, as_attachment=True)
