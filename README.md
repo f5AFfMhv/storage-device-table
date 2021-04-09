@@ -53,7 +53,7 @@ systemctl start sdt
 # Docker
 Run docker container.
 ````
-docker run -d -p 5000:5000 f5affmhv/storage-device-table
+docker run -d --name SDT -p 5000:5000 -e TZ=Europe/Vilnius f5affmhv/storage-device-table
 ````
 Or build image from Dockerfile
 ````
