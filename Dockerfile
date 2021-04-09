@@ -3,6 +3,7 @@ WORKDIR /app
 COPY templates /app/templates/
 COPY img /app/img/
 COPY scripts/SDT-ansible-playbook.yml /app/scripts/SDT-ansible-playbook.yml
+COPY scripts/deploy-linux-agent.yml /app/scripts/deploy-linux-agent.yml
 COPY scripts/SDT-linux-agent.sh /app/scripts/SDT-linux-agent.sh
 COPY scripts/SDT-windows-agent.ps1 /app/scripts/SDT-windows-agent.ps1
 COPY app.py /app
