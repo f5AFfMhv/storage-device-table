@@ -43,6 +43,8 @@ try {
 }
 if ($ad){
     $hosts = (Get-ADcomputer -Filter *).name
+    # To change computer search base use following syntax
+    #$hosts = (Get-ADcomputer -Filter * -SearchBase "OU=SERVERS, DC=EXAMPLE, DC=COM").name
 }
 else {
     $hosts = (Get-CimInstance -ClassName Win32_ComputerSystem).name

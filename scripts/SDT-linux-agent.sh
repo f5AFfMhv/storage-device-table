@@ -10,6 +10,8 @@
 # Main variables
 # Server IP or resolvable fqdn
 SERVER="192.168.0.2"
+# Server port
+PORT=5000
 # List of mounted storage devices to be monitored. Add -x options for file system types you want to exclude
 DEVICE_LIST=$(df -x squashfs -x tmpfs -x devtmpfs -x overlay --output=target | tail -n +2)
 # Threshold values of used space in percentage to determine device state
@@ -21,8 +23,6 @@ REQUEST="/tmp/request"
 QUIET=false
 # Server timeout in seconds
 TIMEOUT=5
-# API url
-URI="http://$SERVER:5000/api/v1/devices"
 # Regular expression for matching integers
 INTEGERS_RE='^[0-9]+$'
 # Help message
@@ -55,6 +55,9 @@ esac
 shift
 done
 
+# API url
+URI="http://$SERVER:$PORT/api/v1/devices"
+
 # Check if jq installed
 if ! command -v jq &> /dev/null; then
     echo "Please install jq - command-line JSON processor."
@@ -78,7 +81,7 @@ fi
 
 # For every storage device in list, get information about its size, free space and usage in percentage.
 for DEVICE in $DEVICE_LIST; do
-    if [[ $DEVICE != /boot* ]]; then
+    if [[ $DEVICE != /boot* && $DEVICE != /var/lib/docker* ]]; then
         SIZE=$(df -BM $DEVICE | tail -n +2 | awk '{print $2}')
         FREE=$(df -BM $DEVICE | tail -n +2 | awk '{print $4}')
         USE=$(df -h $DEVICE | tail -n +2 | awk '{print $5}')

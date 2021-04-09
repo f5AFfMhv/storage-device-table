@@ -6,6 +6,7 @@ tests/
 iframe_figures/
 scripts/ansible.cfg
 scripts/inventory
+scripts/deploy-linux-agent.yml
 servers.db
 SD_table.csv
 clean.db

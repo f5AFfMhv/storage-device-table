@@ -97,6 +97,10 @@ Additionally when `-ad` flag is passed, instead of checking only local drives, a
 ````
 netsh advfirewall firewall set rule group="Windows Management Instrumentation (WMI)" new enable=yes
 ````
+To change computer search base uncomment following line in agent script:
+```
+$hosts = (Get-ADcomputer -Filter * -SearchBase "OU=SERVERS, DC=EXAMPLE, DC=COM").name
+```
 To get help execute:
 ````
 Get-Help .\SDT-windows-agent.ps1 -Full
