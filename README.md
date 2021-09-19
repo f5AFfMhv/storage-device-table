@@ -4,7 +4,7 @@ Web application is refreshed every minute. Pressing on server hostname generates
 All data from internal database can be exported to CSV file.
 
 <div align="center">
-    <img src="https://i.imgur.com/Fyjmb0A.gif" width="100%" alt="api"/>
+    <img src="https://i.imgur.com/9waxqWJ.png" width="100%" alt="sdt"/>
 </div>
 
 # Installation
@@ -53,7 +53,7 @@ systemctl start sdt
 # Docker
 Run docker container.
 ````
-docker run -d --name SDT -p 5000:5000 -e TZ=Europe/Vilnius f5affmhv/storage-device-table
+docker run -d --name SDT -p 5000:5000 -e TZ=Europe/Vilnius f5affmhv/storage-device-table:latest
 ````
 Or build image from Dockerfile
 ````

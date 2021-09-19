@@ -1,19 +1,36 @@
-FROM python:3.8.5
-WORKDIR /app
-COPY templates /app/templates/
-COPY img /app/img/
-COPY scripts/SDT-ansible-playbook.yml /app/scripts/SDT-ansible-playbook.yml
-COPY scripts/deploy-linux-agent.yml /app/scripts/deploy-linux-agent.yml
-COPY scripts/SDT-linux-agent.sh /app/scripts/SDT-linux-agent.sh
-COPY scripts/SDT-windows-agent.ps1 /app/scripts/SDT-windows-agent.ps1
-COPY app.py /app
-COPY graphs.py /app
-COPY SDT.db /app/SDT.db
-RUN pip3 install --trusted-host pypi.python.org Flask
-RUN pip3 install --trusted-host pypi.python.org requests
-RUN pip3 install --trusted-host pypi.python.org plotly
-RUN pip3 install --trusted-host pypi.python.org pandas
-RUN pip3 install --trusted-host pypi.python.org ipython
-RUN pip3 install --trusted-host pypi.python.org nbformat
+# Made using example from 
+# https://github.com/GoogleContainerTools/distroless/blob/main/examples/python3-requirements/Dockerfile
+
+
+# Build a virtualenv using the appropriate Debian release
+# * Install python3-venv for the built-in Python3 venv module (not installed by default)
+# * Install gcc libpython3-dev to compile C Python modules
+# * Update pip to support bdist_wheel
+FROM debian:buster-slim AS build
+RUN apt-get update && \
+    apt-get install --no-install-suggests --no-install-recommends --yes python3-venv gcc libpython3-dev && \
+    python3 -m venv /venv && \
+    /venv/bin/pip install --upgrade pip
+
+# Build the virtualenv as a separate step: Only re-execute this step when requirements.txt changes
+FROM build AS build-venv
+# metadata
+LABEL dockerfile.version="2"
+LABEL software="SDT"
+LABEL software.version="1.2"
+LABEL description="RESTful API for monitoring storage device usage"
+LABEL website="https://github.com/f5AFfMhv/storage-device-table"
+LABEL license="https://github.com/f5AFfMhv/storage-device-table/blob/master/COPYING"
+LABEL maintainer="Martynas J."
+LABEL maintainer.email="mjankunas@gmail.com"
+
+COPY requirements.txt /requirements.txt
+RUN /venv/bin/pip install --disable-pip-version-check -r /requirements.txt
+
+# Copy the virtualenv into a distroless image
+FROM gcr.io/distroless/python3-debian10
 EXPOSE 5000
-CMD ["python3", "app.py"]
+WORKDIR /app
+COPY --from=build-venv /venv /venv
+COPY . /app
+ENTRYPOINT ["/venv/bin/python3", "app.py"]

@@ -1,0 +1,11 @@
+COPYING
+Dockerfile
+iframe_figures/*
+__pycache__/
+*.md
+*.csv
+.git
+.gitignore
+.dockerignore
+scripts/ansible.cfg
+scripts/inventory
