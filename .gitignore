@@ -3,6 +3,7 @@ __pycache__/
 frontend/
 grafana/
 tests/
+templates/test.html
 iframe_figures/
 scripts/ansible.cfg
 scripts/inventory

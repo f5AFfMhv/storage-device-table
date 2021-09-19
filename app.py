@@ -26,23 +26,25 @@ from flask import Flask, jsonify, request, make_response, send_file, redirect, r
 from datetime import datetime
 import sqlite3
 import plotly.io as pio
-import graphs # Script for creating graphs
+import graphs  # Script for creating graphs
 import pandas as pd
 
 # Variables
 PORT = 5000
 BASE = 'http://localhost:' + str(PORT)
-API = '/api/v1/devices' # API uri
+API = '/api/v1/devices'  # API uri
 BASE_URL = BASE + API
 DB_FILE = 'SDT.db'
 IFRAME_GRAPH = 'iframe_figures/figure_0.html'
 STATE_ORDER = ["alert", "warning", "normal"]
-CSV_EXPORT_ORDER = ['id', 'host', 'ip', 'device', 'state', 'size_mb', 'free_mb', 'used_perc', 'updated']
+CSV_EXPORT_ORDER = ['id', 'host', 'ip', 'device',
+                    'state', 'size_mb', 'free_mb', 'used_perc', 'updated']
+VERSION = "v1.2"
 
 app = Flask(__name__)
-#app.config["DEBUG"] = True # Enable stdout logging
+# app.config["DEBUG"] = True # Enable stdout logging
 
-pio.renderers.default = "iframe" # How to render graphs
+pio.renderers.default = "iframe"  # Graph rendering method
 
 # Function to convert data from SQLite DB to dictionary (from "API with flask" tutorial)
 def dict_factory(cursor, row):
@@ -67,23 +69,27 @@ def db_mod(db, sql, opts=''):
 
 # Error handling functions
 def page_not_found(e):
-    return make_response(jsonify({'error':'Not found', 'status':e}), e)
+    return make_response(jsonify({'error': 'Not found', 'status': e}), e)
+
 
 def bad_request(e, msg=''):
-    return make_response(jsonify({'error':'Bad request', 'status':e, 'message':msg}), e)
+    return make_response(jsonify({'error': 'Bad request', 'status': e, 'message': msg}), e)
+
 
 @app.errorhandler(404)
 def default_page_not_found(e):
-    return make_response(jsonify({'error':'Not found', 'status':404}), 404)
+    return make_response(jsonify({'error': 'Not found', 'status': 404}), 404)
+
 
 @app.errorhandler(400)
 def default_bad_request(e):
-    return make_response(jsonify({'error':'Bad request', 'status':400}), 400)
+    return make_response(jsonify({'error': 'Bad request', 'status': 400}), 400)
+
 
 # Server root page shows table with all records from DB
 @app.route('/', methods=['GET'])
 def home():
-    row=[] # List of table rows to be rendered
+    row = []  # List of table rows to be rendered
     for device_state in STATE_ORDER:
         # Make API call to get results for every state individualy
         request = requests.get(BASE_URL + '?state=' + device_state)
@@ -93,7 +99,7 @@ def home():
             data = request.json()
             # Combine all information into one list of rows
             row.extend(data)
-    return render_template('table.html', row=row)
+    return render_template('table.html', row=row, query="Search query ...", version=VERSION)
 
 # Return host storage bar graph when clicked on hostname
 @app.route('/graph/<name>', methods=['GET'])
@@ -101,10 +107,34 @@ def get_graph(name):
     # Generate graph with plotly as iframe
     fig = graphs.figure(BASE_URL, name)
     fig.create_graph().show()
-    # Open graph iframe html 
-    f = open(IFRAME_GRAPH,'r')
+    # Open graph iframe html
+    f = open(IFRAME_GRAPH, 'r')
     graph = f.read()
     return graph
+
+# Render search results to table.html
+@app.route('/search', methods=['GET'])
+def search():
+    row = []  # List of table rows to be rendered
+    query = request.args.get('search_text')
+    # If search query is empty return full table
+    if query == "":
+        return home()
+    else:
+        # Make API call to get results for matching name
+        r = requests.get(BASE_URL + '/all')
+        data = r.json()
+        # Search for query in each record all value fields
+        for record in data:
+            # Flag for prevent duplicates
+            appended = False
+            for col in CSV_EXPORT_ORDER:
+                # If match found and record is not already appended, add it to an array
+                if query in str(record.get(col)) and not appended:
+                    row.append(record)
+                    appended = True
+        # Render table.html template with search results
+        return render_template('table.html', row=row, query="Search: " + query, version=VERSION)
 
 # Delete device from table
 @app.route('/remove/<id>', methods=['GET'])
@@ -131,18 +161,19 @@ def download(agent):
 @app.route('/<file>')
 def file_return(file):
     if file == "favicon.ico":
-	    path = "img/favicon.ico"
+        path = "img/favicon.ico"
     elif file == "delete.png":
         path = "img/delete.png"
     elif file == "style.css":
         path = "templates/style.css"
-    elif file == "filter.js":
-        path = "templates/filter.js"
-    elif file == "refresh_bar.js":
-        path = "templates/refresh_bar.js"
+    elif file == "sort.js":
+        path = "templates/sort.js"
+    elif file == "reload.js":
+        path = "templates/reload.js"
     else:
-        return page_not_found(404)    
+        return page_not_found(404)
     return send_file(path, as_attachment=True)
+
 
 # Generate CSV from all records in database
 @app.route('/export')
@@ -166,6 +197,8 @@ def get_all_records():
     return jsonify(all_devices)
 
 # Get specific records from DB
+
+
 @app.route(API, methods=['GET'])
 def get_record():
     # Filter API requests by record ID, hostname, state or device
@@ -215,9 +248,10 @@ def create_record():
     if not request.json or not 'host' in request.json:
         return bad_request(400)
 
-    server_list = (request.json.get('host'), request.json.get('device'), request.json.get('state'), 
-                    request.json.get('size_mb'), request.json.get('free_mb'), request.json.get('used_perc'), 
-                    request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    server_list = (request.json.get('host'), request.json.get('device'), request.json.get('state'),
+                   request.json.get('size_mb'), request.json.get(
+                       'free_mb'), request.json.get('used_perc'),
+                   request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     # SQL query
     sql = ''' INSERT INTO devices(host,device,state,size_mb,free_mb,used_perc,ip,updated)
               VALUES(?,?,?,?,?,?,?,?) '''
@@ -246,8 +280,8 @@ def update_record():
 
     # Form list of new values from request (no NULL values should be added, because of previous check)
     server_list = (request.json.get('state'), request.json.get('size_mb'), request.json.get('free_mb'),
-        request.json.get('used_perc'), request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), request.json.get('id'))
-   
+                   request.json.get('used_perc'), request.remote_addr, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), request.json.get('id'))
+
     # Build SQL query
     sql = ''' UPDATE devices
               SET state = ? ,
@@ -274,11 +308,13 @@ def delete_record():
     r = requests.get(BASE_URL + '?id=' + id)
     if (r.status_code == 404):
         return page_not_found(404)
-    
+
     # Form SQL query
     sql = ''' DELETE FROM devices WHERE id=? '''
     # Execute SQL query
     db_mod(DB_FILE, sql, (id,))
     return jsonify({'result': True}), 200
 
+
 app.run(host='0.0.0.0', port=PORT)
+
